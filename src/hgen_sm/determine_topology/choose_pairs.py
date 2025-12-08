@@ -6,5 +6,5 @@ rectangles = determine_fourth_points(rectangles_input)
 
 # Output: Pairs of Rectangles
 # 0-1, 1-2, 2-3
-def connect_pairs():
+def determine_topology():
     return pairs

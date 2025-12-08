@@ -6,11 +6,7 @@ from .design_exploration.plot_state import plot_state
 from .geometry.utilities import convert_to_float64
 from .geometry.part_generation import determine_fourth_points, calculate_planes, calculate_intersections, collision_tab_bend
 
-def connect_pair():
-    # ------ Initialization ------
-    plot_cfg = cfg.get('plot', {})
-    plotter = pv.Plotter()
-    
+def find_connections():    
     # ------ Initial Calculations ------
     rectangles_input = convert_to_float64(items=[rect0, rect1])
     rectangles = determine_fourth_points(rectangles_input)
@@ -25,10 +21,3 @@ def connect_pair():
         solutions.append(one_bend(state, solutions))
     if cfg.get('design_exploration').get('double_bend', True):
         solutions.append(two_bends(state, solutions))
-
-    print("--- %s seconds ---" % (time.time() - start_time))
-    print(f"Found {len(solutions)-1} solutions")
-
-    # ------ Plotting solutions ------
-    if len(solutions)<=1: return
-    plot_state(plotter, plot_cfg, solutions)

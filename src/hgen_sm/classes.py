@@ -99,6 +99,13 @@ class Bend:
         if tab not in self.connected_tabs:
             self.connected_tabs.append(tab)
 
+class Mount:
+    def __init__(self, Tab, dist_AB, dist_BC, size = 5):
+        self.Tab = Tab
+        self.dist_AB = dist_AB
+        self.dist_BC = dist_BC
+        self.size = size
+
 # class State:
     # def __init__(self, rectangles, planes, bends, single_bend=None, corner_points=None, flanges=None, points=None, elements=None, comment=None):
     #     self.rectangles = rectangles

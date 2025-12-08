@@ -3,10 +3,11 @@
 __version__ = "0.1.0"
 __author__ = "Maxim Moellhoff"
 
-from .choose_pairs import connect_pairs
+from .choose_pairs import determine_topology
 
 # Define what is available when the package is imported
 __all__ = [
     "__version__"
-    "connect_pairs"
+    "choose_pairs"
+    "determine_topology"
 ]
