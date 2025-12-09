@@ -1,17 +1,13 @@
-from .part_generation import calculate_rect_plane, calculate_plane_intersection
-from src.hgen_sm.data.classes import Part
-
+import numpy as np
 import itertools
-from .part_generation import create_bending_point, calculate_flange_points, turn_points_into_element
-from .utilities import check_lines_cross, normalize, cord_lines_cross
+
 from config.design_rules import min_flange_width
 
-import numpy as np
 
-def connect_with_one_bend(part, solutions):
-    rectangles = part.rectangles
-    bend = part.bends
-    part.single_bend = True
+def one_bend(state, solutions):
+    rectangles = state.rectangles
+    bend = state.bends
+    state.single_bend = True
 
     rectA_points = list(rectangles[0].values())
     rectB_points = list(rectangles[1].values())
@@ -23,7 +19,7 @@ def connect_with_one_bend(part, solutions):
 
     for pairA in rectA_combinations:
         for pairB in rectB_combinations:
-            new_state = part.copy()
+            new_state = state.copy()
             new_state.elements.append(turn_points_into_element(rectA_points))
             
             CPA1 = pairA[0]
@@ -70,11 +66,11 @@ def connect_with_one_bend(part, solutions):
 
 # If there are two bends, there are three planes, which are called A, B and C
 # The first rectangle the user provides is A, and the second one is C, and the one in between B
-def connect_with_two_bends(part, solutions):
-    part.single_bend = False
-    rectangles = part.rectangles
-    planeA = part.planes[0]
-    planeC = part.planes[1]
+def two_bends(state, solutions):
+    state.single_bend = False
+    rectangles = state.rectangles
+    planeA = state.planes[0]
+    planeC = state.planes[1]
 
     rectA_corners = list(rectangles[0].values())
     rectC_corners = list(rectangles[1].values())
@@ -86,12 +82,12 @@ def connect_with_two_bends(part, solutions):
             CPC1 = rectC_corners[(i + 1) % 4]
             CPC2 = rectC_corners[(i - 1) % 4]
             rectCmid = (CPC1 + CPC2) / 2
-            new_state = part.copy()
+            new_state = state.copy()
             new_state.corner_points.extend([CPA1, CPA2, CPC0, CPC1, CPC2])
             
             CP_triangle = {"pointA": CPA1, "pointB": CPA2, "pointC": CPC0}
             CP_planeB = calculate_planes(rectangles=[CP_triangle])[0]
-            CP_bendBC = calculate_plane_intersection(planes=[CP_planeB, planeC])
+            CP_bendBC = calculate_intersections(planes=[CP_planeB, planeC])
             dir_vector_BC = np.cross(planeC.orientation, CP_bendBC["direction"]) 
             dir_vector_BC /= np.linalg.norm(dir_vector_BC)
 
@@ -106,9 +102,9 @@ def connect_with_two_bends(part, solutions):
 
             BP_triangle = {"pointA": BPA1, "pointB": BPA2, "pointC": BPC0}
             planeB = calculate_planes(rectangles=[BP_triangle])[0]
-            bendBC = calculate_plane_intersection(planes=[planeB, planeC])
+            bendBC = calculate_intersections(planes=[planeB, planeC])
             
-            bendAB = calculate_plane_intersection(planes=[planeA, planeB])
+            bendAB = calculate_intersections(planes=[planeA, planeB])
             
             dir_vector = np.cross(planeB.orientation, bendAB["direction"])
             dir_vector /= np.linalg.norm(dir_vector)
@@ -139,7 +135,7 @@ def connect_with_two_bends(part, solutions):
             new_state.elements.append(turn_points_into_element([FPBC1, BPC1, BPC2, FPBC2]))
             new_state.elements.append(turn_points_into_element([BPC1, FPC1, FPC2, BPC2]))
             new_state.elements.append(turn_points_into_element([FPC1, CPC1, CPC2, FPC2]))
-            part.elements.append(turn_points_into_element(rectC_corners))
+            state.elements.append(turn_points_into_element(rectC_corners))
 
             new_state.points = {"CPA1": CPA1, "CPA2": CPA2,
                                 "BPA1": BPA1, "BPA2":BPA2, 
@@ -155,17 +151,3 @@ def connect_with_two_bends(part, solutions):
     #         continue
 
     return solutions
-
-def find_connections(part, rect_x, rect_z, cfg):   
-
-    # ------ Initial Calculations ------
-    plane_x = calculate_rect_plane(rect_x)
-    plane_z = calculate_rect_plane(rect_z)
-    intersection = calculate_plane_intersection(plane_x, plane_z)
-
-    # ------ Design Exploration ------
-    solutions = []
-    if cfg.get('design_exploration').get('single_bend', True): # not collision_tab_bend(intersection, rectangles) and 
-        solutions.append(connect_with_one_bend(part, solutions))
-    if cfg.get('design_exploration').get('double_bend', True):
-        solutions.append(connect_with_two_bends(part, solutions))

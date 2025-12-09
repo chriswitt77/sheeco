@@ -3,7 +3,7 @@
 __version__ = "0.1.0"
 __author__ = "Maxim Moellhoff"
 
-from .choose_pairs import determine_topology
+from .choose_pairs import determine_sequences
 
 # Define what is available when the package is imported
 __all__ = [
