@@ -8,5 +8,5 @@ from .choose_pairs import determine_sequences
 # Define what is available when the package is imported
 __all__ = [
     "__version__"
-    "determine_topology"
+    "determine_sequences"
 ]

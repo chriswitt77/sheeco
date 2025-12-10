@@ -4,7 +4,13 @@
 __version__ = "0.4.0"
 __author__ = "Maxim Moellhoff"
 
-from .data.classes import Part, Tab, Pair, Bend
+# from .data.bend import Bend
+# from .data.mount import Mount
+# from .data.pair import Pair
+# from .data.part import Part
+# from .data.rectangle import Rectangle
+# from .data.segment import Segment
+# from .data.tab import Tab
 
 # Define what is available when the package is imported
 __all__ = [

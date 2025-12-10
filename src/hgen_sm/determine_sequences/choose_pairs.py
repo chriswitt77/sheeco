@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from hgen_sm.data.classes import Pair, Rectangle # Ensure other classes are imported here
+from src.hgen_sm.data import *
 
 def determine_sequences(rectangles, cfg):
     topo_cfg = cfg.get('topologies', {})
