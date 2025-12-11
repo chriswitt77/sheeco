@@ -1,14 +1,47 @@
 import copy
+from typing import Dict, List, Optional
 
 from .rectangle import Rectangle
 from .tab import Tab
 from .bend import Bend
+from .segment import Segment
 
 class Part:
     """Represents the entire, 3D sheet metal part"""
-    def __init__(self, tabs = None, bends = None, rects = None, sequence = None):
+    def __init__(self, sequence = None, tabs = None):
+        self.sequence = sequence or None
+        self.tabs: Dict[str, 'Tab'] = tabs or {}
+        self.bends: Dict[str, 'Bend'] = {}
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class _Part:
+    """Represents the entire, 3D sheet metal part"""
+    def __init__(self, tabs = None, bends = None, rects = None, sequence = None, segments = None):
         self.rects: list['Rectangle'] = rects or []
-        self.sequence = sequence
+        self.segments: list['Segment'] = segments or []
+        self.sequence = sequence or []
         self.tabs: list['Tab'] = tabs or []
         self.bends: list['Bend'] = bends or []
         self.history: list[str] = []

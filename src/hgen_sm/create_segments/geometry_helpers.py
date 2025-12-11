@@ -18,7 +18,7 @@ def calculate_plane(rect):
             "Plane[1]": {"position": np.ndarray, "normal": np.ndarray}
         }
     """
-    A, B, C = rect.pointA, rect.pointB, rect.pointC
+    A, B, C = rect.corners['A'], rect.corners['B'], rect.corners['C']
 
     # Compute normal vector
     AB = B - A

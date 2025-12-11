@@ -3,16 +3,22 @@ import numpy as np
 
 
 class Rectangle:
-    """Represents the input rectangle by the user"""
-    def __init__(self, tab_id: int, pointA: float, pointB: float, pointC: float, mounts = None):
-
+    """Represents the input rectangle by the user. Fourth Point D is determined automatically."""
+    def __init__(self, tab_id: int, A: float, B: float, C: float, mounts = None):
         self.tab_id = tab_id
-        self.pointA = np.array(pointA, dtype=np.float64)
-        self.pointB = np.array(pointB, dtype=np.float64)
-        self.pointC = np.array(pointC, dtype=np.float64)
-        self.pointA, self.pointB, self.pointC, self.pointD = self.determine_fourth_point(self.pointA, self.pointB, self.pointC)
 
-        self.corners = [self.pointA, self.pointB, self.pointC, self.pointD]
+        A = np.array(A, dtype=np.float64)
+        B = np.array(B, dtype=np.float64)
+        C = np.array(C, dtype=np.float64)
+        A, B, C, D = self.determine_fourth_point(A, B, C)
+
+        self.corners = {
+            'A': np.array(A, dtype=np.float64), 
+            'B': np.array(B, dtype=np.float64), 
+            'C': np.array(C, dtype=np.float64), 
+            'D': np.array(D, dtype=np.float64), 
+            }
+        # self.corners = [self.A, self.B, self.C, self.D]
         self.mounts = mounts
 
     def __repr__(self):

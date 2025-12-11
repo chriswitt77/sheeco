@@ -15,7 +15,10 @@ class Bend:
             FPL_B = None, 
             FPR_A = None, 
             FPR_B = None, 
-            BPM = None
+            BPM = None,
+            tab_x = None,
+            tab_y = None,
+            tab_z = None
             ):
         
         self.position = position
@@ -23,6 +26,10 @@ class Bend:
         self.BPL = BPL
         self.BPR = BPR
         self.BPM = BPM
+
+        self.tab_x = tab_x
+        self.tab_z = tab_y
+        self.tab_z = tab_z
 
     def copy(self):
         return copy.deepcopy(self)

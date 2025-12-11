@@ -1,2 +1,89 @@
-def plotting():
+import numpy as np
+import pyvista as pv
+
+def plot_part(part, plotter, cfg, solution_idx, len_solutions):
+    if plotter is None or cfg is None:
+        return
+    
+    standard_point_size = cfg.get('point_size', 8)
+    standard_font_size = cfg.get('font_size', 20)
+
+    color_rectangle = "#785ef0"
+    color_element = "#648fff"
+    color_flange = "#1dcc54"
+    color_bend = "#ffb000"
+    color_BP1 = "#dc267f"
+    color_BP2 = "#26dc83"
+
+    if cfg.get('Legend', True):
+        legend_text = """
+    BP = Bending Point
+    CP = Corner Point
+    FP = Flange Point
+
+    _A  = Part of Tab A
+    _AB = Connect Tab A and B
+
+    _0 = Middle
+    _1 = Side 1
+    _2 = Side 2
+            """
+        # Add the text box to the plot
+        plotter.add_text(legend_text, position="lower_left", font_size=15, color="black")
+
+    if getattr(part, 'comment', None): # FOR DEBUGGING
+        plotter.add_text(part.comment[0], position="lower_left", font_size=15, color="black")
+
+    # Plot rectangles
+    if cfg.get('Rectangles', False) and getattr(part, 'rects', None):
+        for i, rect in enumerate(part.rects):
+            pts = np.array([rect.pointA, rect.pointB, rect.pointC, rect.pointD])
+            faces = np.hstack([[4, 0, 1, 2, 3]])
+            rectangle_mesh = pv.PolyData(pts, faces)
+            plotter.add_mesh(rectangle_mesh, color=color_rectangle, opacity=1, show_edges=True)
+
+    if cfg.get('Tabs', False) and getattr(part, 'tabs', None):
+        for i, tab in enumerate(part.tabs):
+            plotter.add_mesh(
+                tab,
+                color=color_element,
+                opacity=0.8,
+                show_edges=True,
+                label=f"Tab {i}"
+            )
+
+    # Solution ID
+    if solution_idx is not None and len_solutions is not None:
+        counter_text = f"Solution: {solution_idx}/{len_solutions}"
+        plotter.add_text(counter_text, position="upper_left", font_size=20, color="black", shadow=True)
+
+    # --- Finish plot ---
+    plotter.show_grid()
+    plotter.render()
+
+def plot_solutions(plotter, plot_cfg, solutions):
+    """
+    Create interactive plotting window, which can be cycled through to explore all the solutions.
+    """
+    solution_idx = [0]
+    def show_solution(idx):
+        plotter.clear()
+        part = solutions[idx]
+        plot_part(part, plotter=plotter, cfg=plot_cfg, solution_idx=solution_idx[0]+1, len_solutions=len(solutions))
+
+    def key_press_callback(key):
+        if key == 'Right':
+            solution_idx[0] = (solution_idx[0] + 1) % len(solutions)
+            show_solution(solution_idx[0])
+        elif key == 'Left':
+            solution_idx[0] = (solution_idx[0] - 1) % len(solutions)
+            show_solution(solution_idx[0])
+
+    plotter.add_key_event("Right", lambda: key_press_callback("Right"))
+    plotter.add_key_event("Left", lambda: key_press_callback("Left"))
+    show_solution(solution_idx[0])
+    plotter.enable_trackball_style()
+
+    plotter.show()
+
     return
