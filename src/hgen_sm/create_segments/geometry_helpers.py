@@ -73,15 +73,16 @@ def create_bending_point(point0, point1, bend):
     return BP
 
 def calculate_flange_points(BP1, BP2, planeA, planeB, flange_width=min_flange_width):
+    """Output: FPAL, FPAR, FPBL, FPBR"""
     BP0 = (BP1 + BP2) / 2.0
     bend_dir = normalize(BP2 - BP1)
     perpA = perp_toward_plane(planeA, BP0, bend_dir)
     perpB = perp_toward_plane(planeB, BP0, bend_dir)
 
-    FPA1, FPA2 = BP1 + perpA * flange_width, BP2 + perpA * flange_width
-    FPB1, FPB2 = BP1 + perpB * flange_width, BP2 + perpB * flange_width
+    FPAL, FPAR = BP1 + perpA * flange_width, BP2 + perpA * flange_width
+    FPBL, FPBR = BP1 + perpB * flange_width, BP2 + perpB * flange_width
 
-    return FPA1, FPA2, FPB1, FPB2
+    return FPAL, FPAR, FPBL, FPBR
 
 def turn_points_into_element(points):
     points = np.array(points, dtype=np.float64)

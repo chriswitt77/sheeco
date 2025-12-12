@@ -11,19 +11,15 @@ class Tab:
     def __init__(self, tab_id: int, rectangle = None, mounts = None):
         self.tab_id = tab_id
         self.rectangle: 'Rectangle' = rectangle or None
-        # self.bends: 'Bend' = {}
-        self.points = []
+        self.points: Dict[str, np.ndarray] = {
+            'A': rectangle.corners['A'],
+            'B': rectangle.corners['B'],
+            'C': rectangle.corners['C'],
+            'D': rectangle.corners['D']
+        }
         self.mounts = []
         self.corner_usage: Dict[str, Optional[str]] = {'A': None, 'B': None, 'C': None, 'D': None}
 
-        # Tab Side L: (FP2, BP2,) CP1, CP, BP1, FP1
-        self.points_L = []
-        # Tab Side R: FP1, BP1, CP, CP(, BP2, FP2)
-        self.points_R = []
-
-        # Tab Usage Encoding:
-        # A FBBF B FBBF C FBBF D FBBF
-        # CP FP_L BP_L BP_R FP_R ... 
 
     def __repr__(self):
         # 1. Start the representation string
@@ -49,52 +45,54 @@ class Tab:
 
     def copy(self):
         return copy.deepcopy(self)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class _Tab:
-    """Represents a single, planar section of the SM part"""
-    def __init__(self, tab_id: int, rect: Rectangle, CP=None, used_CP=None):
-        self.tab_id = tab_id
-        self.rect = rect
-        self.bends = []
-
-
-
-        self.corner_usage = {
-            'A': False,
-            'B': False,
-            'C': False,
-            'D': False,
-        }
-        # self.points = [CPA, CPB, CPC, CPD, FP]
-
-    def copy(self):
-        return copy.deepcopy(self)
     
-    def assign_bend():
-        return 
+    def insert_points(self, L, add_points):
+        """
+        Inserts a sequence of new geometric points into the points 
+        dictionary immediately following the L.
+        
+        This method rebuilds the dictionary to maintain insertion order.
+        """
+        L_id = list(L.keys())[0]
+        if L_id not in self.points:
+            raise ValueError(f"Start corner ID '{L}' not found.")
 
-    def update_geometry(self, new_rect: Rectangle):
-        self.rect = new_rect
+        new_points: Dict[str, np.ndarray] = {}
+        insertion_done = False
+        
+        for key, value in self.points.items():
+            if not insertion_done:
+                # 1. Copy points before the insertion point
+                new_points[key] = value
+                
+                # 2. Insertion point found: copy L and insert sequence
+                if key == L_id:
+                    new_points.update(add_points)
+                    insertion_done = True
+            
+            else:
+                # 3. Skip the original end_corner_id (already included in the sequence)
+                # if key == end_corner_id:
+                #     continue
+                
+                # 4. Copy remaining points (C, D, etc.)
+                new_points[key] = value
 
-    def collect_points(self):
-        CP = self.corner_usage
-        if CP['A'] == False:
-            CPA = self.rect.A
-        # if tab has one attachment, points = [CPA, CPB, CPC, CPD, FPL, BPL, BPR, FPR]
-        # if tab has two attachments, points = [FP1L, BP1L, BP1R, FP1R, CPA, CPB, CPC, CPD, FP2R, BP2R, BP2L, FP2L]
-        # if tab is y: points = [BP, FP, FP, BP, BP, FP, FP]
-
-
+        self.points = new_points
+        
+    def remove_point(self, point):
+        """
+        Removes a specified point (key) from the ordered_geometry dictionary.
+        Used when a corner is entirely consumed (e.g., in a complex bend or trim).
+        """
+        point_id = list(point.keys())[0]
+        if point_id not in self.points:
+            return 
+        
+        new_points: Dict[str, np.ndarray] = {}
+        
+        for key, value in self.points.items():
+            if key != point:
+                new_points[key] = value
+                
+        self.points = new_points

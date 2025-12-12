@@ -9,6 +9,22 @@ from ..data.bend import Bend
 
 from hgen_sm.data import Part, Tab, Rectangle
 
+from typing import Set, Tuple
+
+def are_corners_neighbours(cp_id1: str, cp_id2: str) -> bool:
+    """Checks if two corner IDs are adjacent on the perimeter of the rectangle."""
+    
+    # Define all valid, adjacent (non-directional) pairs
+    # Using a Set of Tuples ensures fast, order-independent lookup.
+    ADJACENT_PAIRS: Set[Tuple[str, str]] = {
+        ('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A')
+    }
+    
+    # Normalize the input by sorting the IDs to handle both ('A', 'B') and ('B', 'A')
+    normalized_pair = tuple(sorted((cp_id1, cp_id2)))
+    
+    return normalized_pair in ADJACENT_PAIRS
+
 def one_bend(segment):
     tab_x = segment.tabs['tab_x']
     tab_x_id = tab_x.tab_id
@@ -29,50 +45,69 @@ def one_bend(segment):
     segment_library = []
     for pair_x in rect_x_combinations:
         CP_xL_id = pair_x[0]
+        CP_xL = tab_x.points[CP_xL_id]
         CP_xR_id = pair_x[1]
-        CP_xL = rect_x.corners[CP_xL_id]
-        CP_xR = rect_x.corners[CP_xR_id]
+        CP_xR = tab_x.points[CP_xR_id]
+        
         for pair_z in rect_z_combinations:
             CP_zL_id = pair_z[0]
-            CP_zR_id = pair_z[1]
             CP_zL = rect_z.corners[CP_zL_id]
+            CP_zR_id = pair_z[1]
             CP_zR = rect_z.corners[CP_zR_id]
-
-            # ---- Copy ----
-            # For each segment the tab can change, and therefore needs to be copied. The rects stay the same in each case
-            new_segment = segment.copy()
-            new_tab_x = new_segment.tabs['tab_x']
-            new_tab_z = new_segment.tabs['tab_z']
-
-            # ---- Assign used Corner Points CP to Segment ----            
-            new_tab_x.corner_usage[CP_xL_id] = True
-            new_tab_x.corner_usage[CP_xR_id] = True
-            new_tab_z.corner_usage[CP_zL_id] = True
-            new_tab_z.corner_usage[CP_zR_id] = True
             
-            # ---- Bends ----
+            # ---- Bending Points ----
             new_bend = bend.copy()
 
             BPL = create_bending_point(CP_xL, CP_zL, bend)
             BPR = create_bending_point(CP_xR, CP_zR, bend)
+            FPxL, FPxR, FPzL, FPzR = calculate_flange_points(BPL, BPR, planeA=plane_x, planeB=plane_z)
 
-            new_bend.BPL, new_bend.BPR = BPL, BPR
+            # ---- Update Segment.tabs ----
+            new_segment = segment.copy()
+            new_tab_x = new_segment.tabs['tab_x']
+            new_tab_z = new_segment.tabs['tab_z']
 
-            new_bend.FPL_A, new_bend.FPL_B, new_bend.FPR_A, new_bend.FPR_B = (
-                 calculate_flange_points(BPL, BPR, planeA=plane_x, planeB=plane_z)
-            )
-            new_segment.bends.update({tab_x_id+tab_z_id: new_bend})
-            # new_tab_x.bends = {tab_x_id+tab_z_id: new_bend}
-            # new_tab_z.bends = {tab_x_id+tab_z_id: new_bend}
+            # ---- Insert Points in Tab x----
+            CPL = {CP_xL_id: CP_xL}
+            bend_points_x = { 
+                                f"FP{tab_x_id}{tab_z_id}L": FPxL, 
+                                f"BP{tab_x_id}{tab_z_id}L": BPL, 
+                                f"BP{tab_x_id}{tab_z_id}R": BPR, 
+                                f"FP{tab_x_id}{tab_z_id}R": FPxR
+                                }
             
+            new_tab_x.insert_points(L=CPL, add_points=bend_points_x)
+            
+            if not are_corners_neighbours(CP_xL_id, CP_xR_id):
+                CPR = {CP_xR_id: CP_xR} 
+                new_tab_x.remove_point(point=CPR)
+            
+            # ---- Insert Points in Tab z----
+            CPL = {CP_zL_id: CP_zL}
+            bend_points_z = { 
+                                f"FP{tab_z_id}{tab_x_id}L": FPzL, 
+                                f"BP{tab_z_id}{tab_x_id}L": BPL, 
+                                f"BP{tab_z_id}{tab_x_id}R": BPR, 
+                                f"FP{tab_z_id}{tab_x_id}R": FPzR
+                                }
+            
+            new_tab_z.insert_points(L=CPL, add_points=bend_points_z)
+            
+            if not are_corners_neighbours(CP_zL_id, CP_zR_id):
+                CPR = {CP_zR_id: CP_zR}
+                new_tab_z.remove_point(point=CPR)
+            
+            # ---- Update New Segment with New Tabs and add to Stack
+            new_segment.tab_x = new_tab_x
+            new_segment.tab_z = new_tab_z
+            segment_library.append(new_segment)
             # inter = None
             # if check_lines_cross(CP, FP, BP): 
             #     #continue
             #     inter = cord_lines_cross(CP, FP, BP) # FOR DEBUGGING
             #     new_state.comment.append("Bad")  # FOR DEBUGGING
             # else: new_state.comment.append("Good") # FOR DEBUGGING
-
-            segment_library.append(new_segment)
+            
 
     return segment_library
 

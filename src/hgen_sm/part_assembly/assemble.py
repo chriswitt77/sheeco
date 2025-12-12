@@ -1,17 +1,36 @@
 from src.hgen_sm.data import Part
 
-def part_assembly(part, segments_combination, cfg):
-    # Check if they don't conflict with used corners, and therefore can be assembled
-    # for segment in segments_combination:
-    #     print(segment)
-    #     segment.tabs[tab_x_id]
-
-    segments_combination
+def part_assembly(part, segments, cfg):
+    segments
     
-    part.bends.update(segments_combination[0].bends)
-    part.tabs[segments_combination[0].tab_x_id] = segments_combination[0].tabs[0]
+    for segment in segments:
+        return
 
-    for segment in segments_combination:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    part.bends.update(segments[0].bends)
+    part.tabs[segments[0].tab_x_id] = segments[0].tabs[0]
+
+    for segment in segments:
         tab_x = part.get_tab_id(segment.tab_x_id)
         tab_x = part.tabs[tab_x]
         tab_z = part.get_tab_id(segment.tab_z_id)
@@ -26,7 +45,7 @@ def part_assembly(part, segments_combination, cfg):
             tab_x.bends.append(bend)
             tab_z.bends.append(bend)
 
-    return segments_combination[0]
+    return segments[0]
 
     # part.extend(segments=segments_combination)
     # for segment in segments_combination:

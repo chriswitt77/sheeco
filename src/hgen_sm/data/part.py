@@ -43,7 +43,7 @@ class _Part:
         self.segments: list['Segment'] = segments or []
         self.sequence = sequence or []
         self.tabs: list['Tab'] = tabs or []
-        self.bends: list['Bend'] = bends or []
+        self.bends: dict['Bend'] = bends or {}
         self.history: list[str] = []
 
     def copy(self):

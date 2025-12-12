@@ -17,9 +17,6 @@ from src.hgen_sm.create_segments import create_segments
 from src.hgen_sm.part_assembly import part_assembly
 from src.hgen_sm.plotting.plot_assembly import plot_solutions
 
-# import matplotlib
-# matplotlib.use("Agg")
-
 def main():
     segment_cfg = cfg.get('design_exploration')
     plot_cfg = cfg.get('plot')
@@ -43,9 +40,9 @@ def main():
             segments_library.append(create_segments(segment, segment_cfg))
 
     # Assemble Parts
+        part.sequence = sequence
         for segments_combination in itertools.product(*segments_library):
             new_part = part
-            part.sequence = sequence
             solutions.append(part_assembly(new_part, segments_combination, cfg))
 
     print("--- %s seconds ---" % (time.time() - start_time))
