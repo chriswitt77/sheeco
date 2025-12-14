@@ -1,6 +1,6 @@
 [project]
-name = "gen_design_sheet_metal"
-version = "0.3"
+name = "hgen-sm"
+version = "0.4"
 authors = [
     { name = "Maxim Möllhoff", email = "maxim@moellhoff.eu" }
 ]
@@ -11,7 +11,9 @@ dependencies = [
     "pyvista",
     "PyYAML",
     "dataclasses",
-    "shapely"
+    "shapely",
+    "typing",
+    "scipy"
 ]
 
 [tool.setuptools]
