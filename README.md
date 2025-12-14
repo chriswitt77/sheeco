@@ -17,13 +17,13 @@ The user gives two rectangles as an input, and the program tries to find differe
 # How to run it
 0. Open the main folder in an IDE or in the console
 1. Create a virtual environment
-   `python3 -m venv ./venv`
+   `python3.13 -m venv ./venv`
 2. Activate the virtual environment
    `source venv/bin/activate`
 3. Install dependencies (the . at the end is important)
    `pip install -e .`
 4. Run the program
-   `python -m gen_design_sheet_metal`
+   `python -m hgen_sm`
 
 
 # How to use it
