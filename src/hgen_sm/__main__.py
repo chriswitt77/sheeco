@@ -39,16 +39,19 @@ def main():
     # Assemble Parts
         part.sequence = sequence
         for segments_combination in itertools.product(*segments_library):
-            new_part = part
+            new_part = part.copy()
+            new_part = part_assembly(new_part, segments_combination, cfg)
+            if new_part == None: continue
             part_id += 1
             new_part.part_id = part_id
-            solutions.append(part_assembly(new_part, segments_combination, cfg))
+            solutions.append(new_part)
 
     print("--- %s seconds ---" % (time.time() - start_time))
-    print(f"Found {len(solutions)-1} solutions")
+    print(f"Found {len(solutions)} solutions")
 
-    # Plot solutions
-    if len(solutions) > 0: pass
+    if len(solutions) == 0: 
+        return
+
     plot_solutions(plotter, plot_cfg, solutions)
 
 if __name__ == '__main__':

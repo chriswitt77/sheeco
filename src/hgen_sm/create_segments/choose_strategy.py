@@ -4,6 +4,7 @@ def create_segments(segment, segment_cfg):
     segment_library = []
 
     if segment_cfg.get('single_bend', True): #and not collision_tab_bend(bend, rectangles)  
+        # ADD IF RECTANGLES ARE PARALLEL, SKIP!!!
         segment_library.extend(one_bend(segment))
 
     # if segment_cfg.get('double_bend', True):

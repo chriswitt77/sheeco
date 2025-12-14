@@ -39,6 +39,7 @@ def one_bend(segment):
     intersection = calculate_plane_intersection(plane_x, plane_z)
     bend = Bend(position=intersection["position"], orientation=intersection["orientation"])
     
+    
     rect_x_combinations = list(itertools.permutations(rect_x.corners, 2))
     rect_z_combinations = list(itertools.permutations(rect_z.corners, 2))
 
@@ -51,13 +52,11 @@ def one_bend(segment):
         
         for pair_z in rect_z_combinations:
             CP_zL_id = pair_z[0]
-            CP_zL = rect_z.corners[CP_zL_id]
+            CP_zL = tab_z.points[CP_zL_id]
             CP_zR_id = pair_z[1]
-            CP_zR = rect_z.corners[CP_zR_id]
+            CP_zR = tab_z.points[CP_zR_id]
             
             # ---- Bending Points ----
-            new_bend = bend.copy()
-
             BPL = create_bending_point(CP_xL, CP_zL, bend)
             BPR = create_bending_point(CP_xR, CP_zR, bend)
             FPxL, FPxR, FPzL, FPzR = calculate_flange_points(BPL, BPR, planeA=plane_x, planeB=plane_z)

@@ -8,6 +8,7 @@ design_exploration:
 
 plot:
   Rectangles: True
+  Tab Points: True
   Tabs: True
   Corner Points: False
   Planes: False

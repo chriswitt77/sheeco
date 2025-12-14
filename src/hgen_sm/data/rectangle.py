@@ -25,20 +25,25 @@ class Rectangle:
         return f"<Rectangle on Tab {self.tab_id}>"
     
     @staticmethod
+
     def determine_fourth_point(A, B, C):
         """
         Given three Point objects (A, B, C), compute fourth point D.
         """
         AB = B - A
-        AC = C - A
-        # If AB and AC are swapped (zigzag), flip AC to keep CCW order
-        normal = np.cross(AB, AC)
-        if np.dot(np.cross(AB, AC), normal) < 0:
-            B, C = C, B
-            AB = B - A
-            AC = C - A
+        BC = C - B
+        CA = A - C
+        # If the Z-component is negative, the winding order is clockwise (CW).
+        # To fix the "zigzag" or force CCW, we swap B and C.
+        # cross_z = np.cross(AB, AC)[2]
+        # if cross_z < 0:
+        #     A, B, C = C, A, B
+        #     AB = B - A
+        #     AC = C - A
+        #     D = A + AB + AC
+        D = C - AB
+    
 
-        D = A + AB + AC
         return A, B, C, D
     
     def expand_corners(self, offset: float):

@@ -9,7 +9,7 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
     standard_font_size = cfg.get('font_size', 20)
 
     color_rectangle = "#785ef0"
-    color_element = "#648fff"
+    color_tabs = "#648fff"
     color_flange = "#1dcc54"
     color_bend = "#ffb000"
     color_BP1 = "#dc267f"
@@ -42,15 +42,34 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
             rectangle_mesh = pv.PolyData(pts, faces)
             plotter.add_mesh(rectangle_mesh, color=color_rectangle, opacity=1, show_edges=True)
 
-    if cfg.get('Tabs', False) and getattr(part, 'tabs', None):
-        for i, tab in enumerate(part.tabs):
-            plotter.add_mesh(
-                tab,
-                color=color_element,
-                opacity=0.8,
-                show_edges=True,
-                label=f"Tab {i}"
-            )
+    if cfg.get('Tabs', False) and getattr(part, 'tabs', None):   
+        for tab_id, tab_obj in part.tabs.items():
+            if tab_obj.points: 
+                ordered_coords = list(tab_obj.points.values())
+                points_array = np.array(ordered_coords) 
+                num_points = points_array.shape[0]
+                faces = np.hstack([[num_points], np.arange(num_points)])
+                mesh = pv.PolyData(points_array, faces=faces)
+                plotter.add_mesh(
+                    mesh,
+                    color=color_tabs,
+                    opacity=0.8,
+                    show_edges=True,
+                    style='surface', 
+                    label=f"Tab {tab_id}"
+                )
+
+                # Add labels for each point
+                point_ids = list(tab_obj.points.keys())
+                for i, point_id in enumerate(point_ids):
+                    point_coord = points_array[i]
+                    plotter.add_point_labels(
+                        point_coord,
+                        [point_id],
+                        font_size=30,
+                        point_size=20,
+                        show_points=True
+                    )
 
     # Solution ID
     if solution_idx is not None and len_solutions is not None:

@@ -9,52 +9,6 @@ def extract_tabs_from_segments(tab_id, segments):
                 tabs.append(segment.tabs[tab])
     return tabs
 
-# def merge_points(tabs: List):
-#     """Try to merge tabs.points
-#     If unsuccessfull, return None"""
-#     # AB F CD + ABC F D -> AB F C F D
-#     std_pts = ['A', 'B', 'C', 'D']
-#     points = []
-#     # Extract points dictionaries from tabs
-#     for i in range(len(tabs)):
-#         points.append(tabs[i].points)
-#     new_points = {}
-
-#     # for tab_list in points:
-#     a = 0
-#     b = 1
-#     i = 0 # main counter
-#     ha = 0 # how much tab list a is ahead
-#     hb = 0 # how much tab list b is ahead
-#     for std_pt in std_pts:
-#         # If both have the same CP, it enters the list
-#         if points[a][i+ha] == std_pt and points[b][i+hb] == std_pt:
-#             new_points.update(points[a])
-#         if points[a][i+ha] != std_pt and points[b][i+hb] == std_pt:
-#             while points[a][i+ha] != i:
-#                 new_points.update(points[a][i+ha])
-#                 ha += 1
-#         if points[b][i+hb] != i and points[0+ha][i] == std_pt:
-#             while points[b][i+ha] != i:
-#                 new_points.update(points[b][i+ha])
-#                 ha += 1
-#         if points[a][i+ha] != std_pt and points[b][i+hb] != std_pt:
-#             return None
-#         i += 1
-
-    # A B C D
-    # 
-    # AFB CD +
-    # A BFCD =
-    # AFBFCD 
-
-    # ABFCD +
-    #  BCDF  =
-    #  BFCDF
-    # 
-    # AFBCD + BCDF = None
-
-
 from typing import Dict, Any, Optional, List, Set, Tuple
 import numpy as np
 
@@ -152,12 +106,6 @@ def merge_points(tabs: List[Any]) -> Optional[Dict[str, np.ndarray]]:
         
     return final_geometry
 
-        
-
-
-
-
-
 def part_assembly(part, segments, cfg):
     segments # =(<Part: Sequence=['0', '1']>, <Part: Sequence=['1', '2']>)
     flat_sequence = [] 
@@ -185,47 +133,3 @@ def part_assembly(part, segments, cfg):
             part.tabs[tab_id].points = new_points
 
     return part
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    part.bends.update(segments[0].bends)
-    part.tabs[segments[0].tab_x_id] = segments[0].tabs[0]
-
-    for segment in segments:
-        tab_x = part.get_tab_id(segment.tab_x_id)
-        tab_x = part.tabs[tab_x]
-        tab_z = part.get_tab_id(segment.tab_z_id)
-        tab_z = part.tabs[tab_z]
-        for bend in segment.bends:
-            
-            # 1. Assign Tabs to the Bend object
-            bend.tab_x = tab_x
-            bend.tab_z = tab_z
-            
-            # 2. Assign Bend to the Tabs (Create the bidirectional link)
-            tab_x.bends.append(bend)
-            tab_z.bends.append(bend)
-
-    return segments[0]
-
-    # part.extend(segments=segments_combination)
-    # for segment in segments_combination:
-    # return assembly
