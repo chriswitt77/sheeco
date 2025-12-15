@@ -35,12 +35,29 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
         plotter.add_text(part.comment[0], position="lower_left", font_size=15, color="black")
 
     # Plot rectangles
-    if cfg.get('Rectangles', False) and getattr(part, 'rects', None):
-        for i, rect in enumerate(part.rects):
-            pts = np.array([rect.pointA, rect.pointB, rect.pointC, rect.pointD])
-            faces = np.hstack([[4, 0, 1, 2, 3]])
-            rectangle_mesh = pv.PolyData(pts, faces)
-            plotter.add_mesh(rectangle_mesh, color=color_rectangle, opacity=1, show_edges=True)
+    if cfg.get('Rectangles', False):
+        
+        # 1. Loop through all tabs in the part
+        for tab_id, tab_obj in part.tabs.items():
+            
+            # Check if this specific tab has a 'rectangles' attribute/property
+            if getattr(tab_obj, 'rectangle', None):
+                corners = tab_obj.rectangle.corners
+                pts = np.array([corners['A'], corners['B'], corners['C'], corners['D']])
+                
+                # Define the single quadrilateral face (4 points: 0, 1, 2, 3)
+                faces = np.hstack([[4, 0, 1, 2, 3]])
+                
+                rectangle_mesh = pv.PolyData(pts, faces)
+                
+                # Add mesh to plotter
+                plotter.add_mesh(
+                    rectangle_mesh, 
+                    color=color_rectangle, 
+                    opacity=1, 
+                    show_edges=True,
+                    label=f"Rect_{tab_id}" # Use a unique label
+                )
 
     if cfg.get('Tabs', False) and getattr(part, 'tabs', None):   
         for tab_id, tab_obj in part.tabs.items():

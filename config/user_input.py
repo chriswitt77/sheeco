@@ -12,7 +12,7 @@ RECTANGLE_INPUTS = [
     {
         'pointA': [3, 0, 10],
         'pointB': [3, 3, 10],
-        'pointC': [8, 0, 10]
+        'pointC': [8, 3, 10]
     }
 ]
 
