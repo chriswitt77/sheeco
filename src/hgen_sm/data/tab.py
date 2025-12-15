@@ -28,7 +28,7 @@ class Tab:
         repr_str = f"<Tab: "
 
         if hasattr(self, 'tab_id') and self.tab_id:
-            repr_str += f"ID={len(self.tab_id)}"
+            repr_str += f"ID={self.tab_id}"
 
         if hasattr(self, 'mounts') and self.mounts:
             repr_str += f", Mnts.={len(self.mounts)}"

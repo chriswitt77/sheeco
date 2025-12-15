@@ -5,8 +5,8 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
     if plotter is None or cfg is None:
         return
     
-    standard_point_size = cfg.get('point_size', 8)
-    standard_font_size = cfg.get('font_size', 20)
+    standard_point_size = cfg.get('point_size', 20)
+    standard_font_size = cfg.get('font_size', 30)
 
     color_rectangle = "#785ef0"
     color_tabs = "#648fff"
@@ -20,13 +20,13 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
     BP = Bending Point
     CP = Corner Point
     FP = Flange Point
-
-    _A  = Part of Tab A
-    _AB = Connect Tab A and B
-
-    _0 = Middle
-    _1 = Side 1
-    _2 = Side 2
+    
+    0,1,2,... = ID of Tab
+    
+    A,B,C,D = Corner Points of user input rectangle
+    
+    L = Left Side of Flange
+    R = Right Side of Flange
             """
         # Add the text box to the plot
         plotter.add_text(legend_text, position="lower_left", font_size=15, color="black")
@@ -50,14 +50,22 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
                 
                 rectangle_mesh = pv.PolyData(pts, faces)
                 
-                # Add mesh to plotter
+                label=f"Rect_{tab_id}"
                 plotter.add_mesh(
                     rectangle_mesh, 
                     color=color_rectangle, 
                     opacity=1, 
                     show_edges=True,
-                    label=f"Rect_{tab_id}" # Use a unique label
                 )
+
+                center_point = pts.mean(axis=0)
+                plotter.add_point_labels(
+                        center_point,
+                        [label],
+                        font_size=standard_font_size,
+                        always_visible=True,
+                        show_points=False # Do not plot a visible dot at the center
+                    )
 
     if cfg.get('Tabs', False) and getattr(part, 'tabs', None):   
         for tab_id, tab_obj in part.tabs.items():
@@ -83,9 +91,9 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
                     plotter.add_point_labels(
                         point_coord,
                         [point_id],
-                        font_size=30,
-                        point_size=20,
-                        show_points=True
+                        font_size=standard_font_size,
+                        point_size=standard_point_size,
+                        show_points=False
                     )
 
     # Solution ID

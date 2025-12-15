@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.spec
+
 # Distribution / packaging
 *.egg-info/
 **/*.egg-info/

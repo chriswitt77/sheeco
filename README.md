@@ -8,8 +8,7 @@
   <img src="assets/images/2bend_06.png" alt="Screenshot 4" width="45%"/>
 </p>
 
-
-THIS PROJECT IS STILL UNFINISHED!
+WORK IN PROGRESS!
 
 # How it works
 The user gives two rectangles as an input, and the program tries to find different ways to connect those two rectangles in way, that is manufacturable. Solutions are generated in two ways. Either by finding the intersection of the two planes and connecting them, or by selecting 2 points from one rectangle and 1 point from the other, and creating an additional tab on that plane.

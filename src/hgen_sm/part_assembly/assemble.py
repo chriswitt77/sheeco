@@ -30,14 +30,19 @@ def merge_points(tabs: List[Any]) -> Optional[Dict[str, np.ndarray]]:
     merged_ids: List[str] = []
     idx_a, idx_b = 0, 0
 
+    escape_counter = 0 
+
     # --- Core Merge Logic ---
     while idx_a < len(ids_a) or idx_b < len(ids_b):
+        if escape_counter >= 30:
+            return None
+        escape_counter += 1
         id_a = ids_a[idx_a] if idx_a < len(ids_a) else None
         id_b = ids_b[idx_b] if idx_b < len(ids_b) else None
 
         # Stop condition
         if id_a is None and id_b is None:
-            return None
+            break
 
         # Check if the current points are standard or non-standard
         is_std_a = id_a in STD_PTS
@@ -55,6 +60,7 @@ def merge_points(tabs: List[Any]) -> Optional[Dict[str, np.ndarray]]:
         if id_a is not None and not is_std_a and (is_std_b or id_b is None):
             # Tab A is ahead, consume A's unique sequence until a standard point is hit
             while id_a is not None and not is_std_a:
+
                 merged_ids.append(id_a)
                 idx_a += 1
                 id_a = ids_a[idx_a] if idx_a < len(ids_a) else None
@@ -65,6 +71,7 @@ def merge_points(tabs: List[Any]) -> Optional[Dict[str, np.ndarray]]:
         if id_b is not None and not is_std_b and (is_std_a or id_a is None):
             # Tab B is ahead, consume B's unique sequence until a standard point is hit
             while id_b is not None and not is_std_b:
+
                 merged_ids.append(id_b)
                 idx_b += 1
                 id_b = ids_b[idx_b] if idx_b < len(ids_b) else None
@@ -107,32 +114,39 @@ def edges_cross_over(part: Any) -> bool:
 
 
 def part_assembly(part, segments, cfg):
-    segments # =(<Part: Sequence=['0', '1']>, <Part: Sequence=['1', '2']>)
+    new_tabs_dict = {}
     flat_sequence = [] 
-    for segment_sequence in part.sequence: 
-        for segment_tab_id in segment_sequence:
-            flat_sequence.append(segment_tab_id) #expect: [0 1 1 2 2 3]
-    # go through sequence
-    # count how often each tab_id appears
+    for segment in segments:
+        for _, tab_local_id in enumerate(segment.tabs):
+            tab_id = segment.tabs[tab_local_id].tab_id
+            flat_sequence.append(tab_id)
+            new_tabs_dict.update({tab_id: segment.tabs[tab_local_id]})
+
     tab_count = {}
     for tab_id in flat_sequence:
         tab_count[tab_id] = tab_count.get(tab_id, 0) + 1
 
+
     for _, tab_id in enumerate(tab_count):
         count = tab_count[tab_id]
-    # if a tab only appears once, grab the tab value from segments and merge it into part directly
+
+        # if a tab only appears once, grab the tab value from segments and merge it into part directly
         if count == 1:
-            tab = extract_tabs_from_segments(tab_id, segments)[0]
-            part.tabs[tab_id].points = tab.points
-    # if a tab appears twice, grab the values from segments, try to merge them. If it fails, skip entirely
+            tab_local_id = extract_tabs_from_segments(tab_id, segments)[0]
+            new_tabs_dict[tab_id].points = tab_local_id.points
+
+
+        # if a tab appears twice, grab the values from segments, try to merge them. If it fails, skip entirely
         if count > 1:
             tabs = extract_tabs_from_segments(tab_id, segments)
             new_points = merge_points(tabs)
             if new_points == None:
                 return None
-            part.tabs[tab_id].points = new_points
+            new_tabs_dict[tab_id].points = new_points
 
     if edges_cross_over(part):
         return None
+    
+    part.tabs = new_tabs_dict
 
     return part
