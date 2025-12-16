@@ -105,3 +105,39 @@ def cord_lines_cross(CP, FP, BP): # FOR DEBUGGING
         return interA
     if interB.within(quadB):
         return interB
+    
+
+def line_plane_intersection(
+    line_point: np.ndarray, 
+    line_dir: np.ndarray, 
+    plane_point: np.ndarray, 
+    plane_normal: np.ndarray, 
+    epsilon: float = 1e-6
+):    
+    # Calculate the dot product of the plane normal and the line direction vector (N dot L)
+    N_dot_L = np.dot(plane_normal, line_dir)
+    
+    # Check if the line is parallel to the plane
+    if abs(N_dot_L) < epsilon:
+        # Check if the line lies within the plane (optional, but good practice)
+        # If N dot (PA - P0) is also zero, the line is in the plane
+        PA_minus_P0 = plane_point - line_point
+        if abs(np.dot(plane_normal, PA_minus_P0)) < epsilon:
+            # Line is in the plane (infinite intersections)
+            # We return None as a specific intersection point cannot be determined
+            print("ERROR: Line is on plane") 
+            return None
+        else:
+            # Line is parallel and outside the plane (no intersection)
+            print("ERROR: Line is parallel")
+            return None
+
+    # Calculate the parameter t for the line equation
+    # t = N dot (PA - P0) / (N dot L)
+    PA_minus_P0 = plane_point - line_point
+    t = np.dot(plane_normal, PA_minus_P0) / N_dot_L
+    
+    # Calculate the intersection point R(t) = P0 + t * L
+    intersection_point = line_point + t * line_dir
+    
+    return intersection_point

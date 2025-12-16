@@ -3,7 +3,7 @@ import pyvista as pv
 from types import SimpleNamespace
 
 from .utils import normalize, perp_toward_plane, closest_points_between_lines
-from config.design_rules import min_flange_width
+from config.design_rules import min_flange_length
 
 
 def calculate_plane(rect = None, triangle = None):
@@ -56,11 +56,11 @@ def calculate_plane_intersection(planeA, planeB):
 def collision_tab_bend(bend, rectangles):
     return False
 
-def create_bending_point(point0, point1, bend):
-    bend_position = bend.position
-    bend_orientation = bend.orientation
-    p0 = point0
-    p1 = point1
+def create_bending_point(point_tab_A, point_tab_B, bendAB):
+    bend_position = bendAB.position
+    bend_orientation = bendAB.orientation
+    p0 = point_tab_A
+    p1 = point_tab_B
     dir_AB = p1 - p0
     if np.linalg.norm(dir_AB) < 1e-9:
         vec = p0 - bend_position
@@ -75,7 +75,7 @@ def create_bending_point(point0, point1, bend):
         
     return BP
 
-def calculate_flange_points(BP1, BP2, planeA, planeB, flange_width=min_flange_width):
+def calculate_flange_points(BP1, BP2, planeA, planeB, flange_width=min_flange_length):
     """Output: FPAL, FPAR, FPBL, FPBR"""
     BP0 = (BP1 + BP2) / 2.0
     bend_dir = normalize(BP2 - BP1)
