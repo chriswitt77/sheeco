@@ -107,13 +107,15 @@ def merge_points(tabs: List[Any]) -> Optional[Dict[str, np.ndarray]]:
         elif point_id in geom_b:
             final_geometry[point_id] = geom_b[point_id]
         
+    if len(final_geometry) > 12:
+        print(final_geometry)
     return final_geometry
 
 def edges_cross_over(part: Any) -> bool:
     return False
 
 
-def part_assembly(part, segments, cfg):
+def part_assembly(part, segments):
     new_tabs_dict = {}
     flat_sequence = [] 
     for segment in segments:
@@ -143,9 +145,12 @@ def part_assembly(part, segments, cfg):
             if new_points == None:
                 return None
             new_tabs_dict[tab_id].points = new_points
+            if len(new_tabs_dict[tab_id].points) > 12:
+                print("ERROR")
 
     if edges_cross_over(part):
         return None
+    
     
     part.tabs = new_tabs_dict
 

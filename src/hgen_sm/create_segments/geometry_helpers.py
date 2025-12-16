@@ -21,7 +21,7 @@ def calculate_plane(rect = None, triangle = None):
     if rect:
         A, B, C = rect.corners['A'], rect.corners['B'], rect.corners['C']
     elif triangle:
-        A, B, C = triangle['L'], triangle['R'], triangle['M']
+        A, B, C = triangle['A'], triangle['B'], triangle['C']
 
     # Compute normal vector
     AB = B - A

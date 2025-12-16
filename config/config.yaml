@@ -3,7 +3,7 @@ topologies:
 
 
 design_exploration:
-  single_bend: False
+  single_bend: True
   double_bend : True
 
 plot:

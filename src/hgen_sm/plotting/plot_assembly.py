@@ -54,7 +54,7 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
                 plotter.add_mesh(
                     rectangle_mesh, 
                     color=color_rectangle, 
-                    opacity=1, 
+                    opacity=0.2, 
                     show_edges=True,
                 )
 

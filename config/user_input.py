@@ -29,4 +29,35 @@ B = [
     }
 ]
 
-RECTANGLE_INPUTS = B
+C = [
+    {
+        'pointA': [3, 3, 0],
+        'pointB': [3, 0, 0],
+        'pointC': [8, 0, 0]
+    },
+    {
+        'pointA': [-2, 8, 4],
+        'pointB': [-2, 4, 4],
+        'pointC': [-4, 4, 8]
+    }
+]
+
+D = [
+    {
+        'pointA': [3, 3, 0],
+        'pointB': [3, 0, 0],
+        'pointC': [8, 0, 0]
+    },
+    {
+        'pointA': [-2, 8, 4],
+        'pointB': [-2, 4, 4],
+        'pointC': [-4, 4, 8]
+    },
+    {
+        'pointA': [3, 0, 10],
+        'pointB': [3, 3, 10],
+        'pointC': [8, 3, 10]
+    }
+]
+
+RECTANGLE_INPUTS = A
