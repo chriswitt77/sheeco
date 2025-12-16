@@ -7,7 +7,7 @@
   <img src="assets/images/2bend_06.png" alt="Screenshot 4" width="45%"/>
 </p>
 <p align="center">
-  <img src="assets/images/3bend_03.png" alt="Screenshot 1" width="45%"/>
+  <img src="assets/images/3rect_03.png" alt="Screenshot 1" width="45%"/>
   <img src="assets/images/3rect_04.png" alt="Screenshot 2" width="45%"/>
 </p>
 
