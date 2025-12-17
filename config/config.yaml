@@ -10,12 +10,13 @@ filter:
   Min Flange Width: True
   Min Bend Angle: True
   Tabs cover Rects: True
+  Lines Cross: True
 
 plot:
   Rectangles: True
   Tab Points: True
   Tabs: True
-  Triangulate Tabs: False
+  Triangulate Tabs: True
   Corner Points: False
 
   point_size: 30

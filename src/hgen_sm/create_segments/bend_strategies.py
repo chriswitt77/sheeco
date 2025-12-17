@@ -85,8 +85,9 @@ def one_bend(segment, filter_cfg):
             FPxL, FPxR, FPzL, FPzR = calculate_flange_points(BPL, BPR, planeA=plane_x, planeB=plane_z)
 
             # ---- Check Crossover
-            if lines_cross(CP_zL, FPzL, CP_zR, FPzR) or lines_cross(CP_xL, FPxL, CP_xR, FPxR):
-                continue
+            if filter_cfg.get('Lines Cross', True):
+                if lines_cross(CP_zL, FPzL, CP_zR, FPzR) or lines_cross(CP_xL, FPxL, CP_xR, FPxR):
+                    continue
 
             # ---- Update Segment.tabs ----
             new_segment = segment.copy()
@@ -271,7 +272,7 @@ def two_bends(segment, filter_cfg):
                 bend_yz = Bend(position=bend_yz_pos, orientation=bend_yz_ori)
                 BPzM = bend_yz.position
 
-                # new_tab_z.remove_point(point={CPzR_id: CPzR})
+                # new_tab_z.remove_point(point={CPzM_id: CPzM})
 
 
             BPzL = project_onto_line(CPzL, bend_yz.position, bend_yz.orientation)
@@ -354,10 +355,14 @@ def two_bends(segment, filter_cfg):
                                     f"BP{tab_z_id}_{tab_y_id}R": BPzR, 
                                     f"FP{tab_z_id}_{tab_y_id}R": FPzyR
                                     }
-            if CPzM_id in new_tab_z.points:    
-                new_tab_z.insert_points(L={CPzM_id: CPzM}, add_points=bend_points_z)
-            else:
+            if CPzM_id not in new_tab_z.points.keys():    
                 new_tab_z.insert_points(L={CPzL_id: CPzL}, add_points=bend_points_z)
+            elif (CPzM == list(bend_points_z.values())[0]).all(): 
+                new_tab_z.insert_points(L={CPzM_id: CPzM}, add_points=bend_points_z)
+            else:#elif (CPzR == list(bend_points_z.values())[1]).all():
+                new_tab_z.insert_points(L={CPzL_id: CPzL}, add_points=bend_points_z)
+
+
 
             # ---- FILTER: Do Tabs cover Rects fully? ----
             if filter_cfg.get('Tabs cover Rects', False):

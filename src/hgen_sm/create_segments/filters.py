@@ -54,42 +54,44 @@ def tab_fully_contains_rectangle(tab, rect, tol=1e-7):
     
     return tab_poly.contains(rect_poly)
 
-def lines_cross(
-    P1: np.ndarray, P2: np.ndarray, 
-    P3: np.ndarray, P4: np.ndarray, 
-    epsilon: float = 0.1
-) -> bool:
-    """
-    Checks if the 2D segments P1-P2 and P3-P4 intersect.
-    
-    This function uses a 2D cross product check for segment intersection.
-    Assumes points are already projected onto a 2D plane (e.g., ignores the Z-coordinate
-    if the segment is planar to the XY plane).
-    """
-    
-    # Simple projection to 2D (ignoring Z)
-    p1 = P1[:2]
-    p2 = P2[:2]
-    p3 = P3[:2]
-    p4 = P4[:2]
+import numpy as np
 
-    def cross_product_2d(a, b, c) -> float:
-        """Calculates the 2D cross product (orientation) of vectors (b-a) and (c-a)"""
+def lines_cross(P1, P2, P3, P4, buffer=0.1):
+    """
+    Checks if segments P1-P2 and P3-P4 intersect or come within 'buffer' distance.
+    """
+    p1, p2, p3, p4 = P1[:2], P2[:2], P3[:2], P4[:2]
+
+    def dist_segment_to_segment(a, b, c, d):
+        # Helper to find the minimum distance between two 2D segments
+        # This is the most robust way to implement a physical buffer
+        def dist_pt_to_seg(p, s1, s2):
+            l2 = np.sum((s1 - s2)**2)
+            if l2 == 0: return np.linalg.norm(p - s1)
+            t = max(0, min(1, np.dot(p - s1, s2 - s1) / l2))
+            projection = s1 + t * (s2 - s1)
+            return np.linalg.norm(p - projection)
+
+        return min(
+            dist_pt_to_seg(a, c, d),
+            dist_pt_to_seg(b, c, d),
+            dist_pt_to_seg(c, a, b),
+            dist_pt_to_seg(d, a, b)
+        )
+
+    # 1. Standard intersection check (Cross Product)
+    def cp_2d(a, b, c):
         return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
 
-    o1 = cross_product_2d(p1, p2, p3)
-    o2 = cross_product_2d(p1, p2, p4)
-    o3 = cross_product_2d(p3, p4, p1)
-    o4 = cross_product_2d(p3, p4, p2)
+    o1, o2 = cp_2d(p1, p2, p3), cp_2d(p1, p2, p4)
+    o3, o4 = cp_2d(p3, p4, p1), cp_2d(p3, p4, p2)
 
-    # General Case: Segments intersect if and only if the orientation 
-    # of the three points (o1, o2) flips, and (o3, o4) flips.
-    if (o1 * o2 < -epsilon) and (o3 * o4 < -epsilon):
+    # If they mathematically intersect
+    if (o1 * o2 < 0) and (o3 * o4 < 0):
         return True
 
-    # Collinear/Boundary cases (often needed for full robustness, 
-    # but excluded here for minimal complexity)
-    return False
+    # 2. Buffer check: Are they closer than the allowed distance?
+    return dist_segment_to_segment(p1, p2, p3, p4) < buffer
 
 def are_corners_neighbours(cp_id1: str, cp_id2: str) -> bool:
     """Checks if two corner IDs are adjacent on the perimeter of the rectangle."""
