@@ -139,3 +139,6 @@ def line_plane_intersection(
     intersection_point = line_point + t * line_dir
     
     return intersection_point
+
+def project_onto_line(pt, line_pos, line_ori):
+                return line_pos + np.dot(pt - line_pos, line_ori) * line_ori

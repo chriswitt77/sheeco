@@ -82,7 +82,7 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
                     mesh,
                     color=color_tabs,
                     opacity=0.8,
-                    show_edges=True,
+                    show_edges=False,
                     style='surface', 
                     label=f"Tab {tab_id}"
                 )

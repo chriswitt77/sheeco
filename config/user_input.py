@@ -74,4 +74,4 @@ two_parallel = [
 ]
 
 
-RECTANGLE_INPUTS = B
+RECTANGLE_INPUTS = A
