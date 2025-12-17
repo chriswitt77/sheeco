@@ -75,15 +75,15 @@ def create_bending_point(point_tab_A, point_tab_B, bendAB):
         
     return BP
 
-def calculate_flange_points(BP1, BP2, planeA, planeB, flange_width=min_flange_length):
+def calculate_flange_points(BP1, BP2, planeA, planeB, flange_length=min_flange_length):
     """Output: FPAL, FPAR, FPBL, FPBR"""
     BP0 = (BP1 + BP2) / 2.0
     bend_dir = normalize(BP2 - BP1)
     perpA = perp_toward_plane(planeA, BP0, bend_dir)
     perpB = perp_toward_plane(planeB, BP0, bend_dir)
 
-    FPAL, FPAR = BP1 + perpA * flange_width, BP2 + perpA * flange_width
-    FPBL, FPBR = BP1 + perpB * flange_width, BP2 + perpB * flange_width
+    FPAL, FPAR = BP1 + perpA * flange_length, BP2 + perpA * flange_length
+    FPBL, FPBR = BP1 + perpB * flange_length, BP2 + perpB * flange_length
 
     return FPAL, FPAR, FPBL, FPBR
 

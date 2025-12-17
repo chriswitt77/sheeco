@@ -3,13 +3,14 @@ topologies:
 
 
 design_exploration:
-  single_bend: True
+  single_bend: False
   double_bend : True
 
 plot:
   Rectangles: True
   Tab Points: True
   Tabs: True
+  Triangulate Tabs: False
   Corner Points: False
 
   point_size: 30

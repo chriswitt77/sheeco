@@ -60,4 +60,18 @@ D = [
     }
 ]
 
-RECTANGLE_INPUTS = A
+two_parallel = [
+    {
+        'pointA': [0, 0, 0],
+        'pointB': [5, 0, 0],
+        'pointC': [5, 5, 0]
+    },
+    {
+        'pointA': [0, 0, 10],
+        'pointB': [5, 0, 10],
+        'pointC': [5, 5, 10]
+    }
+]
+
+
+RECTANGLE_INPUTS = B

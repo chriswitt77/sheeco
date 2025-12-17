@@ -74,7 +74,10 @@ def plot_part(part, plotter, cfg, solution_idx, len_solutions):
                 points_array = np.array(ordered_coords) 
                 num_points = points_array.shape[0]
                 faces = np.hstack([[num_points], np.arange(num_points)])
-                mesh = pv.PolyData(points_array, faces=faces)#.triangulate()
+                if cfg.get('Triangulate Tabs', False):
+                    mesh = pv.PolyData(points_array, faces=faces).triangulate()
+                else: 
+                    mesh = pv.PolyData(points_array, faces=faces)
                 plotter.add_mesh(
                     mesh,
                     color=color_tabs,
