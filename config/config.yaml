@@ -14,10 +14,12 @@ filter:
 
 plot:
   Rectangles: True
-  Tab Points: True
+  Tab Points: False
   Tabs: True
   Triangulate Tabs: True
   Corner Points: False
+  
+  Labels: False   # Turn off to increase plotting speed
 
   point_size: 30
   font_size: 30
@@ -28,8 +30,3 @@ plot:
   FPA2_color: "green"
   FPB1_color: "orange"
   FPB2_color: "orange"
-
-  debug_labels: True   # toggle labels for bends, BPs, tabs, planes
-
-3D: True
-2D: False

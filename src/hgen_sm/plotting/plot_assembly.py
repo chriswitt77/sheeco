@@ -1,6 +1,8 @@
 import numpy as np
 import pyvista as pv
 
+from src.hgen_sm.export.onshape import export_to_onshape
+
 def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     if plotter is None or plot_cfg is None:
         return
@@ -50,11 +52,11 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                 
                 rectangle_mesh = pv.PolyData(pts, faces)
                 
-                label=f"Rect_{tab_id}"
+                label=f"Tab_{tab_id}"
                 plotter.add_mesh(
                     rectangle_mesh, 
                     color=color_rectangle, 
-                    opacity=0.2, 
+                    opacity=0.8, 
                     show_edges=True,
                 )
 
@@ -87,22 +89,32 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                     label=f"Tab {tab_id}"
                 )
 
-                # Add labels for each point
-                point_ids = list(tab_obj.points.keys())
-                for i, point_id in enumerate(point_ids):
-                    point_coord = points_array[i]
-                    plotter.add_point_labels(
-                        point_coord,
-                        [point_id],
-                        font_size=standard_font_size,
-                        point_size=standard_point_size,
-                        show_points=False
-                    )
+                if plot_cfg.get('Labels', False): # Add labels for each point
+                    point_ids = list(tab_obj.points.keys())
+                    for i, point_id in enumerate(point_ids):
+                        point_coord = points_array[i]
+                        plotter.add_point_labels(
+                            point_coord,
+                            [point_id],
+                            font_size=standard_font_size,
+                            point_size=standard_point_size,
+                            show_points=False
+                        )
 
     # Solution ID
     if solution_idx is not None and len_solutions is not None:
         counter_text = f"Solution: {solution_idx}/{len_solutions}"
         plotter.add_text(counter_text, position="upper_left", font_size=20, color="black", shadow=True)
+
+    # --- Export Button ---
+    def callback(state):
+        if state:
+            export_to_onshape(part)
+            # Reset button state so it can be clicked again
+            plotter.add_checkbox_button_widget(callback, value=False, position=(0.9, 0.9))
+
+    plotter.add_checkbox_button_widget(callback, position=(0.9, 0.9), color_on='green')
+    plotter.add_text("Export to Onshape", position=(0.9, 0.9), font_size=10)
 
     # --- Finish plot ---
     plotter.show_grid()
