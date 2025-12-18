@@ -62,3 +62,6 @@ In config.yaml you can configure what should get plotted.
 - README
 	- [x] Extend installation guide
 	- [x] Explain function more precisely
+
+# Miscellaneous
+[Image Gallery](assets/images/image_gallery.md)
