@@ -1,7 +1,7 @@
 import numpy as np
 import pyvista as pv
 
-from src.hgen_sm.export.onshape import export_to_onshape
+from hgen_sm.export.part_export import export_to_onshape, export_to_text
 
 def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     if plotter is None or plot_cfg is None:
@@ -31,10 +31,7 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     R = Right Side of Flange
             """
         # Add the text box to the plot
-        plotter.add_text(legend_text, position="lower_left", font_size=15, color="black")
-
-    if getattr(part, 'comment', None): # FOR DEBUGGING
-        plotter.add_text(part.comment[0], position="lower_left", font_size=15, color="black")
+        plotter.add_text(legend_text, position="lower_right", font_size=15, color="black")
 
     # Plot rectangles
     if plot_cfg.get('Rectangles', False):
@@ -107,14 +104,19 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
         plotter.add_text(counter_text, position="upper_left", font_size=20, color="black", shadow=True)
 
     # --- Export Button ---
-    def callback(state):
+    def callback_text(state):
+        if state:
+            export_to_text(part)
+            plotter.add_checkbox_button_widget(callback_text, value=False, position=(15, 80)) # Reset button state so it can be clicked again
+    plotter.add_checkbox_button_widget(callback_text, position=(15,80), color_on='green')
+    plotter.add_text("Export to Text", position=(80, 85), font_size=18)
+
+    def callback_onshape(state):
         if state:
             export_to_onshape(part)
-            # Reset button state so it can be clicked again
-            plotter.add_checkbox_button_widget(callback, value=False, position=(0.9, 0.9))
-
-    plotter.add_checkbox_button_widget(callback, position=(0.9, 0.9), color_on='green')
-    plotter.add_text("Export to Onshape", position=(0.9, 0.9), font_size=10)
+            plotter.add_checkbox_button_widget(callback_onshape, value=False, position=(15, 15)) # Reset button state so it can be clicked again
+    plotter.add_checkbox_button_widget(callback_onshape, position=(15,15), color_on='green')
+    plotter.add_text("Export to Onshape", position=(80, 20), font_size=18)
 
     # --- Finish plot ---
     plotter.show_grid()

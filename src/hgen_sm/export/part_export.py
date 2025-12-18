@@ -42,3 +42,9 @@ def export_to_onshape(part):
 #     )
 
 # print("Upload result:", upload)
+
+def export_to_text(part):
+    print(f"Part {part.part_id}")
+    for tab_id in part.tabs:
+        tab = part.tabs[tab_id]
+        print(f"Tab {tab.tab_id} Points: {tab.points}")
