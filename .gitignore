@@ -1,6 +1,12 @@
 # Misc
 .env
+exports/
 .spec
+
+# Debugging & Temporary Data
+*.pkl
+real_part.pkl
+exports/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

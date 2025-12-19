@@ -1,7 +1,10 @@
 import numpy as np
 import pyvista as pv
 
-from hgen_sm.export.part_export import export_to_onshape, export_to_text
+from hgen_sm.export.part_export import export_to_onshape, export_to_json
+
+import pickle
+
 
 def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     if plotter is None or plot_cfg is None:
@@ -106,7 +109,7 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     # --- Export Button ---
     def callback_text(state):
         if state:
-            export_to_text(part)
+            export_to_json(part, solution_id = solution_idx)
             plotter.add_checkbox_button_widget(callback_text, value=False, position=(15, 80)) # Reset button state so it can be clicked again
     plotter.add_checkbox_button_widget(callback_text, position=(15,80), color_on='green')
     plotter.add_text("Export to Text", position=(80, 85), font_size=18)
