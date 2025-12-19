@@ -3,7 +3,7 @@ import pyvista as pv
 
 from hgen_sm.export.part_export import export_to_onshape, export_to_json
 
-import pickle
+from functools import partial
 
 
 def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
@@ -107,19 +107,19 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
         plotter.add_text(counter_text, position="upper_left", font_size=20, color="black", shadow=True)
 
     # --- Export Button ---
-    def callback_text(state):
+    def callback_text(part, state):
         if state:
             export_to_json(part, solution_id = solution_idx)
-            plotter.add_checkbox_button_widget(callback_text, value=False, position=(15, 80)) # Reset button state so it can be clicked again
-    plotter.add_checkbox_button_widget(callback_text, position=(15,80), color_on='green')
-    plotter.add_text("Export to Text", position=(80, 85), font_size=18)
+            # plotter.add_checkbox_button_widget(partial(callback_text, part), value=False, position=(15, 80)) # Reset button state so it can be clicked again
+    plotter.add_checkbox_button_widget(partial(callback_text, part), position=(15,80), color_on='green')
+    plotter.add_text("Export JSON", position=(80, 85), font_size=18)
 
-    def callback_onshape(state):
+    def callback_onshape(part, state):
         if state:
             export_to_onshape(part)
-            plotter.add_checkbox_button_widget(callback_onshape, value=False, position=(15, 15)) # Reset button state so it can be clicked again
-    plotter.add_checkbox_button_widget(callback_onshape, position=(15,15), color_on='green')
-    plotter.add_text("Export to Onshape", position=(80, 20), font_size=18)
+            # plotter.add_checkbox_button_widget(partial(callback_onshape, part), value=False, position=(15, 15)) # Reset button state so it can be clicked again
+    plotter.add_checkbox_button_widget(partial(callback_onshape, part), position=(15,15), color_on='green')
+    plotter.add_text("Export Onshape Feature Script", position=(80, 20), font_size=18)
 
     # --- Finish plot ---
     plotter.show_grid()
@@ -132,6 +132,7 @@ def plot_solutions(solutions, plot_cfg, plotter=pv.Plotter()):
     solution_idx = [0]
     def show_solution(idx):
         plotter.clear()
+        plotter.clear_button_widgets()
         part = solutions[idx]
         plot_part(part, plotter=plotter, plot_cfg=plot_cfg, solution_idx=solution_idx[0]+1, len_solutions=len(solutions))
 
