@@ -55,7 +55,7 @@ def export_to_json(part, solution_id = 0, output_dir="exports"):
 
 # from onshape_client.client import Client
 
-def export_to_onshape(part):
+def export_to_onshape(part, solution_id = 0, output_dir="exports"):
     part_json = create_part_json(part)
     convert_to_fs(part_json)
 
@@ -91,48 +91,104 @@ def export_to_onshape(part):
 
     # print("Upload result:", upload)
 
+import math
 
-def convert_to_fs(data):
-    # Start building the FeatureScript string
-    # We skip the imports so you don't get version errors
-    fs = []
-    fs.append('FeatureScript 2837;')
-    fs.append('import(path : "onshape/std/common.fs", version : "2837.0");')    
-    fs.append('annotation { "Feature Type Name" : "JSON Import" }')
-    fs.append('export const jsonImport = defineFeature(function(context is Context, id is Id, definition is map)')
-    fs.append('    precondition')
-    fs.append('    {')
-    fs.append('        // No inputs needed')
-    fs.append('    }')
-    fs.append('    {')
+def convert_to_fs(part, output_dir="exports"):
+    # Vector helpers
+    sub = lambda a, b: [a[i] - b[i] for i in range(3)]
+    cross = lambda a, b: [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]
+    dot = lambda a, b: sum(x*y for x, y in zip(a, b))
+    norm = lambda v: [x / m for x in v] if (m := math.sqrt(sum(x*x for x in v))) else v
+    mag_sq = lambda v: sum(x*x for x in v)
 
-    # Loop through each tab in the JSON
-    for tab_id, tab_data in data.get("tabs", {}).items():
-        points_code = []
-        point_list = list(tab_data["points"].values())
+    fs = [
+        'FeatureScript 2837;',
+        'import(path : "onshape/std/geometry.fs", version : "2837.0");',
+        'annotation { "Feature Type Name" : "hgen-sm_union_part" }',
+        'export const jsonImport = defineFeature(function(context is Context, id is Id, definition is map)',
+        '    precondition { }',
+        '    {',
+        '        const thickness = 1.0 * millimeter;'
+    ]
+    extrude_queries = []
+
+    for tab_id, tab_data in part.get("tabs", {}).items():
+        pts = list(tab_data["points"].values())
+        if len(pts) < 3: continue
+
+        # --- Plane Detection & Basis Calculation ---
+        p0 = pts[0]
+        v1 = sub(pts[1], p0)
         
-        # Add points to the list
-        for p in point_list:
-            points_code.append(f"            vector({p[0]}, {p[1]}, {p[2]}) * millimeter")
+        # FIX: Find a point that is NOT collinear with p0 and p1 to determine normal
+        z_axis = [0, 0, 1]
+        valid_plane_found = False
         
-        # Close the loop (add start point to end)
-        start_p = point_list[0]
-        points_code.append(f"            vector({start_p[0]}, {start_p[1]}, {start_p[2]}) * millimeter")
+        for i in range(2, len(pts)):
+            v_temp = sub(pts[i], p0)
+            cp = cross(v1, v_temp)
+            # Check if cross product magnitude is sufficient (not collinear)
+            if mag_sq(cp) > 1e-8: 
+                z_axis = norm(cp)
+                valid_plane_found = True
+                break
+        
+        if not valid_plane_found:
+            print(f"Skipping Tab {tab_id}: Points are collinear or degenerate.")
+            continue
 
-        # Generate the vector array variable
-        fs.append(f'        var points_{tab_id} = [')
-        fs.append(",\n".join(points_code))
-        fs.append('        ];')
+        x_axis = norm(v1)            
+        y_axis = cross(z_axis, x_axis)
 
-        # Generate the Polyline operation
-        fs.append(f'        opPolyline(context, id + "tab_{tab_id}", {{')
-        fs.append(f'            "points" : points_{tab_id}')
-        fs.append('        });')
+        # Project 3D points to 2D local plane
+        points_2d = []
+        for p in pts:
+            vec = sub(p, p0)
+            u, v = dot(vec, x_axis), dot(vec, y_axis)
+            points_2d.append(f"vector({u}, {v}) * millimeter")
+        
+        # Ensure the loop is closed for 2D sketch
+        if points_2d[0] != points_2d[-1]:
+             points_2d.append(points_2d[0])
+
+        # Format Vectors for FS
+        fs_org = f"vector({p0[0]}, {p0[1]}, {p0[2]}) * millimeter"
+        fs_norm = f"vector({z_axis[0]}, {z_axis[1]}, {z_axis[2]})"
+        fs_x = f"vector({x_axis[0]}, {x_axis[1]}, {x_axis[2]})"
+
+        # --- Generate FeatureScript ---
+        fs.append(f'')
+        fs.append(f'        // --- Tab {tab_id} ---')
+        fs.append(f'        var sketch{tab_id} = newSketchOnPlane(context, id + "sketch{tab_id}", {{ "sketchPlane" : plane({fs_org}, {fs_norm}, {fs_x}) }});')
+        fs.append(f'        skPolyline(sketch{tab_id}, "poly{tab_id}", {{ "points" : [{", ".join(points_2d)}] }});')
+        fs.append(f'        skSolve(sketch{tab_id});')
+        
+        fs.append(f'        opExtrude(context, id + "extrude{tab_id}", {{')
+        fs.append(f'            "entities" : qSketchRegion(id + "sketch{tab_id}"),')
+        fs.append(f'            "direction" : {fs_norm},')
+        fs.append(f'            "endBound" : BoundingType.BLIND,')
+        fs.append(f'            "endDepth" : thickness')
+        fs.append(f'        }});')
+        extrude_queries.append(f'qCreatedBy(id + "extrude{tab_id}", EntityType.BODY)')
+
+    # --- Merge Operation ---
+    if extrude_queries:
+        fs.append(f'')
+        fs.append(f'        opBoolean(context, id + "unionBodies", {{')
+        fs.append(f'            "tools" : qUnion([{", ".join(extrude_queries)}]),')
+        fs.append(f'            "operationType" : BooleanOperationType.UNION')
+        fs.append(f'        }});')
 
     fs.append('    });')
+    
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+    
+    timestamp = create_timestamp()
 
-    # Output to file
-    with open('exports/output.fs', 'w') as f:
+    filename = f"{timestamp}"
+    filepath = os.path.join(output_dir, filename)
+
+    with open(filepath, 'w') as f:
         f.write("\n".join(fs))
-
-    print("Done. Content saved to output.fs")
+    print(f"Done. Copy {filepath} to Onshape.")
