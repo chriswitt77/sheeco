@@ -1,17 +1,15 @@
 <p align="center">
-  <img src="assets/images/2bend_05.png" alt="Screenshot 3" width="45%"/>
-  <img src="assets/images/1bend_02.png" alt="Screenshot 4" width="45%"/>
+  <img src="assets/images/4rect_12.png" alt="Screenshot 3" width="45%"/>
+  <img src="assets/images/4rect_11.png" alt="Screenshot 4" width="45%"/>
 </p>
 <p align="center">
   <img src="assets/images/3rect_06.png" alt="Screenshot 1" width="45%"/>
   <img src="assets/images/3rect_08.png" alt="Screenshot 2" width="45%"/>
 </p>
 <p align="center">
-  <img src="assets/images/3rect_03.png" alt="Screenshot 1" width="45%"/>
-  <img src="assets/images/3rect_04.png" alt="Screenshot 2" width="45%"/>
+  <img src="assets/images/onshape_01.png" alt="Screenshot 1" width="45%"/>
+  <img src="assets/images/onshape_02.png" alt="Screenshot 2" width="45%"/>
 </p>
-
-WORK IN PROGRESS!
 
 # How it works
 The user gives two rectangles as an input, and the program tries to find different ways to connect those two rectangles in way, that is manufacturable. Solutions are generated in two ways. Either by finding the intersection of the two planes and connecting them, or by selecting 2 points from one rectangle and 1 point from the other, and creating an additional tab on that plane.
@@ -53,13 +51,14 @@ In config.yaml you can configure what should get plotted.
 	- [x] Improve flange visuals
 	- [x] Extend part generation to multiple rectangles
 	- [x] Filter solutions that are unsuitable
-	- [ ] Add flange elements in plot
+	- [ ] Visually improve plot
 	- [ ] Introduce collision filter
 	- [ ] Introduce mounts
 	- [ ] Introduce rule "Minimum distance mount from bend"
 	- [ ] Generate solutions by separating surfaces
-- Simulation
-	- [ ] Connect to Onshape API
+- Export
+	- [x] Create JSON Export
+	- [x] Connect to Onshape API (Creates Onshape Featurescript)
 	- [ ] Check parts with TruTopsBoost
 - README
 	- [x] Extend installation guide

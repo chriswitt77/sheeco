@@ -93,4 +93,4 @@ same_plane = [
 
 
 
-RECTANGLE_INPUTS = B
+RECTANGLE_INPUTS = D
