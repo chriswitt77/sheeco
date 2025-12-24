@@ -5,18 +5,21 @@ def generate_gallery(img_dir="assets/images", output_file="assets/images/image_g
     valid_exts = ('.png', '.jpg', '.jpeg')
     images = sorted([f for f in os.listdir(img_dir) if f.lower().endswith(valid_exts)])
     
-    # Group images by category (e.g., 'bend' or 'rect')
-    categories = defaultdict(list)
+    # Group images by version (the first two digits)
+    versions = defaultdict(list)
     for img in images:
-        cat = "Bends" if "bend" in img.lower() else "Rectangles"
-        categories[cat].append(img)
+        if "_" in img:
+            version_prefix = img.split('_')[0]
+            versions[version_prefix].append(img)
 
     lines = ["# Image Gallery\n"]
 
-    for cat_name, img_list in categories.items():
-        lines.append(f"### {cat_name}")
+    # Sort versions descending (04 before 03)
+    for v in sorted(versions.keys(), reverse=True):
+        display_version = f"{v[0]}.{v[1]}" if len(v) == 2 else v
+        lines.append(f"### Version {display_version}")
         
-        # Process in pairs
+        img_list = versions[v]
         for i in range(0, len(img_list), 2):
             pair = img_list[i:i+2]
             lines.append('<p align="center">')
@@ -24,19 +27,23 @@ def generate_gallery(img_dir="assets/images", output_file="assets/images/image_g
             for img_name in pair:
                 name_part = os.path.splitext(img_name)[0]
                 try:
-                    prefix, img_id = name_part.split('_')
-                    count = ''.join(filter(str.isdigit, prefix))
-                    label = "Bend" if "bend" in prefix.lower() else "Rectangle"
-                    plural = "s" if int(count) != 1 else ""
-                    alt_text = f"{count} {label}{plural}, ID {img_id}"
+                    # Format: 04_3rect_01 -> parts: ["04", "3rect", "01"]
+                    _, desc, img_id = name_part.split('_')
+                    
+                    count = ''.join(filter(str.isdigit, desc))
+                    if "onshape" in desc.lower():
+                        alt_text = f"Onshape Export {img_id}"
+                    else:
+                        label = "Rectangle" if "rect" in desc.lower() else "Bend"
+                        plural = "s" if (count and int(count) != 1) else ""
+                        alt_text = f"{count} {label}{plural}, ID {img_id}"
                 except ValueError:
                     alt_text = img_name
 
-                # src is just the filename
                 lines.append(f'  <img src="{img_name}" alt="{alt_text}" width="45%"/>')
             
             lines.append('</p>')
-        lines.append("") # Spacer between categories
+        lines.append("") 
 
     with open(output_file, "w") as f:
         f.write("\n".join(lines))
