@@ -126,3 +126,50 @@ def minimum_angle_filter(planeA, planeB, min_bend_angle=min_bend_angle):
     # 0 deg = flat, 90 deg = L-bend. 
     bend_angle = angle_deg    
     return bend_angle >= min_bend_angle
+
+def collision_filter(tabs_dict, tol=0.1):
+    tabs = list(tabs_dict.values())
+    
+    for i in range(len(tabs)):
+        for j in range(i + 1, len(tabs)):
+            if str(tabs[i].tab_id) in str(tabs[j].tab_id) or \
+               str(tabs[j].tab_id) in str(tabs[i].tab_id):
+                continue
+                
+            pts1 = np.array(list(tabs[i].points.values()))
+            pts2 = np.array(list(tabs[j].points.values()))
+            
+            # 1. Faster AABB check with a gap (tolerance)
+            # If they don't overlap even with a 0.1mm gap, they definitely don't collide
+            if not _bounds_collide_with_gap(pts1, pts2, gap=tol):
+                continue
+
+            # 2. Narrow Phase: Project and use Shapely
+            # We check if Tab A intersects the plane of Tab B
+            if _precise_poly_collision(pts1, pts2, tol):
+                return True
+    return False
+
+def _bounds_collide_with_gap(pts1, pts2, gap):
+    min1, max1 = pts1.min(axis=0), pts1.max(axis=0)
+    min2, max2 = pts2.min(axis=0), pts2.max(axis=0)
+    # Using < instead of <= and adding a gap to ignore touching faces
+    return np.all(min1 + gap < max2) and np.all(min2 + gap < max1)
+
+def _precise_poly_collision(pts1, pts2, tol):
+    """Checks if two 3D polygons actually intersect."""
+    from shapely.geometry import Polygon
+    
+    # Use your existing logic to project pts1 onto the plane of pts2
+    # This is a simplified check: do the 2D projections overlap?
+    # Note: For full 3D, you'd check if the intersection line segment 
+    # of the two planes lies within both polygons.
+    
+    poly1 = Polygon(pts1[:, :2]) # Simplification for XY-heavy parts
+    poly2 = Polygon(pts2[:, :2])
+    
+    # Intersection must have area to be a 'collision', not just a touch
+    if poly1.intersects(poly2):
+        if poly1.intersection(poly2).area > tol:
+            return True
+    return False

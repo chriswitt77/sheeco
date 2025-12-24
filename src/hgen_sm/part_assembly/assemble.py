@@ -1,4 +1,5 @@
 from src.hgen_sm.part_assembly.merge_helpers import extract_tabs_from_segments, merge_points
+from src.hgen_sm.create_segments.filters import collision_filter
 
 def part_assembly(part, segments):
     new_tabs_dict = {}
@@ -32,6 +33,10 @@ def part_assembly(part, segments):
             new_tabs_dict[tab_id].points = new_points
             if len(new_tabs_dict[tab_id].points) > 12:
                 print("ERROR")
+
+    #FILTER: Check, if any elements collide with each other
+    if collision_filter(new_tabs_dict):
+        return None
 
     part.tabs = new_tabs_dict
 
