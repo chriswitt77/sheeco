@@ -8,16 +8,17 @@ design_exploration:
 
 filter:
   Min Flange Width: True
-  Min Bend Angle: True
+  Min Bend Angle: False
   Tabs cover Rects: True
   Lines Cross: True
   Collisions: True
-  Too thin segments: True
+  Too thin segments: False
 
 plot:
   Rectangles: True
   Tab Points: False
   Tabs: True
+  Flanges: True
   Triangulate Tabs: True
   Corner Points: False
   

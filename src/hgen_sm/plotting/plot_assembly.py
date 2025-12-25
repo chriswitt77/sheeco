@@ -33,7 +33,6 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     L = Left Side of Flange
     R = Right Side of Flange
             """
-        # Add the text box to the plot
         plotter.add_text(legend_text, position="lower_right", font_size=15, color="black")
 
     # Plot rectangles
@@ -56,7 +55,7 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                 plotter.add_mesh(
                     rectangle_mesh, 
                     color=color_rectangle, 
-                    opacity=0.8, 
+                    opacity=0.9, 
                     show_edges=True,
                 )
 
@@ -72,8 +71,8 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     if plot_cfg.get('Tabs', False) and getattr(part, 'tabs', None):   
         for tab_id, tab_obj in part.tabs.items():
             if tab_obj.points: 
-                ordered_coords = list(tab_obj.points.values())
-                points_array = np.array(ordered_coords) 
+                points_list = list(tab_obj.points.values())
+                points_array = np.array(points_list) 
                 num_points = points_array.shape[0]
                 faces = np.hstack([[num_points], np.arange(num_points)])
                 if plot_cfg.get('Triangulate Tabs', False):
@@ -100,11 +99,49 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                             point_size=standard_point_size,
                             show_points=False
                         )
+    
+    if plot_cfg.get('Flanges', False) and getattr(part, 'tabs', None):
+        for tab_id, tab_obj in part.tabs.items():
+            # Group points by the numeric index in their key (e.g., '01', '12')
+            flanges = {}
+            for p_id, coords in tab_obj.points.items():
+                if "BP" in p_id or "FP" in p_id:
+                    # Extract numeric index (e.g., 'BP01L' -> '01')
+                    idx = "".join(filter(str.isdigit, p_id))
+                    if idx not in flanges:
+                        flanges.update({idx: {}})
+                    flanges[idx][p_id] = coords 
+
+            # Plot each detected flange
+            for idx, f_points in flanges.items():
+                # A valid flange needs exactly 4 points: 2 BP and 2 FP
+                if len(f_points) == 4:
+                    # Sort points to ensure a clean quadrilateral (BPL -> BPR -> FPR -> FPL)
+                    # This prevents 'bow-tie' artifacts in the mesh
+                    # ordered_keys = [f"BP{idx}L", f"BP{idx}R", f"FP{idx}R", f"FP{idx}L"]
+                    
+                    try:
+                        pts = np.array([f_points[k] for k in f_points])
+                        # pts = np.array(f_points)
+                        faces = np.hstack([[4, 0, 1, 2, 3]])
+                        flange_mesh = pv.PolyData(pts, faces)
+
+                        plotter.add_mesh(
+                            flange_mesh,
+                            color=color_flange,
+                            opacity=0.9,
+                            show_edges=True,
+                            line_width=2,
+                            label=f"Flange {idx}" if tab_id == "0" else None # Avoid legend clutter
+                        )
+                    except KeyError:
+                        continue # Skip if naming convention doesn't match exactly
 
     # Solution ID
     if solution_idx is not None and len_solutions is not None:
         counter_text = f"Solution: {solution_idx}/{len_solutions}"
         plotter.add_text(counter_text, position="upper_left", font_size=20, color="black", shadow=True)
+
 
     # --- Export Button ---
     def callback_text(part, state):
