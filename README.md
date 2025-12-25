@@ -50,11 +50,11 @@ In config.yaml you can configure what should get plotted.
 - Part generation
 	- [x] Generate solutions for 1 bend
 	- [x] Generate solutions for 2 bend
-	- [x] Improve flange visuals
 	- [x] Extend part generation to multiple rectangles
 	- [x] Filter solutions that are unsuitable
-	- [ ] Visually improve plot
-	- [ ] Introduce collision filter
+	- [x] Improve flange visuals
+	- [x] Introduce collision filter
+	- [ ] Improve angle filter
 	- [ ] Introduce mounts
 	- [ ] Introduce rule "Minimum distance mount from bend"
 	- [ ] Generate solutions by separating surfaces
