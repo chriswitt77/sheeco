@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="assets/images/4rect_12.png" alt="Screenshot 3" width="45%"/>
-  <img src="assets/images/4rect_11.png" alt="Screenshot 4" width="45%"/>
+  <img src="assets/images/04_4rect_12.png" alt="Screenshot 3" width="45%"/>
+  <img src="assets/images/04_4rect_11.png" alt="Screenshot 4" width="45%"/>
 </p>
 <p align="center">
-  <img src="assets/images/3rect_06.png" alt="Screenshot 1" width="45%"/>
-  <img src="assets/images/3rect_08.png" alt="Screenshot 2" width="45%"/>
+  <img src="assets/images/04_3rect_06.png" alt="Screenshot 1" width="45%"/>
+  <img src="assets/images/04_3rect_08.png" alt="Screenshot 2" width="45%"/>
 </p>
 <p align="center">
-  <img src="assets/images/onshape_01.png" alt="Screenshot 1" width="45%"/>
-  <img src="assets/images/onshape_02.png" alt="Screenshot 2" width="45%"/>
+  <img src="assets/images/04_onshape_01.png" alt="Screenshot 1" width="45%"/>
+  <img src="assets/images/04_onshape_02.png" alt="Screenshot 2" width="45%"/>
 </p>
 
 # How it works
