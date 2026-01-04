@@ -1,4 +1,4 @@
-from hgen_sm.create_segments.bend_strategies import one_bend, two_bends
+from src.hgen_sm.create_segments.bend_strategies import one_bend, two_bends
 
 def create_segments(segment, segment_cfg, filter_cfg):
     segment_library = []

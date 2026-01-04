@@ -1,7 +1,7 @@
 import numpy as np
 import pyvista as pv
 
-from hgen_sm.export.part_export import export_to_onshape, export_to_json
+from src.hgen_sm.export.part_export import export_to_onshape, export_to_json
 
 from functools import partial
 
