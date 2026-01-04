@@ -1,6 +1,18 @@
 topologies:
   simple_topology: true
 
+mount_preprocessing:
+  enabled: true
+  min_mount_distance: 5.0
+  verbose: true
+
+surface_separation:
+  auto_split: true
+  min_mounts_for_split: 2
+  mounts_per_surface: 1
+  split_along: 'auto'
+  gap_width: 10
+  verbose: true
 
 design_exploration:
   single_bend: True

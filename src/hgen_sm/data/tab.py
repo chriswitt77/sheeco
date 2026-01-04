@@ -20,7 +20,7 @@ class Tab:
             }
         elif self.rectangle == None:# and self.points != None: 
             self.points = points
-        self.mounts = []
+        self.mounts = mounts or []
         self.bends: list['Bend'] = []
         # self.corner_usage: Dict[str, Optional[str]] = {'A': None, 'B': None, 'C': None, 'D': None}
 

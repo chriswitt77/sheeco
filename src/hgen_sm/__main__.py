@@ -2,35 +2,43 @@ import time
 start_time = time.time()
 
 import yaml
-
 from pathlib import Path
+import copy
+import itertools
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_FILE = PROJECT_ROOT / "config" / "config.yaml"
+
 from config.user_input import RECTANGLE_INPUTS
+
 with CONFIG_FILE.open("r") as f:
     cfg = yaml.load(f, Loader=yaml.FullLoader)
-import copy
-
-import itertools
 
 from src.hgen_sm import Part
 from src.hgen_sm import initialize_objects, determine_sequences, create_segments, part_assembly, plot_solutions
+
 
 def main():
     segment_cfg = cfg.get('design_exploration')
     plot_cfg = cfg.get('plot')
     filter_cfg = cfg.get('filter')
+    mount_cfg = cfg.get('mount_preprocessing', {})
 
-    # ---- Import user input ----
-    part = initialize_objects(RECTANGLE_INPUTS)
-    
-    # ---- Determine sensible Topologies ----
+    # ---- Import user input with mount preprocessing ----
+    part = initialize_objects(
+        RECTANGLE_INPUTS,
+        min_mount_distance=mount_cfg.get('min_mount_distance', 5.0),
+        preprocess_mounts=mount_cfg.get('enabled', True),
+        verbose=mount_cfg.get('verbose', True)
+    )
+
+    # ---- Determine sensible Topologies (with optional surface separation) ----
     sequences = determine_sequences(part, cfg)
 
     # ---- Find ways to connect pairs ----
     solutions = []
     part_id: int = 0
+
     for sequence in sequences:
         segments_library = []
         for pair in sequence:
@@ -41,7 +49,6 @@ def main():
             segments_library.append(create_segments(segment, segment_cfg, filter_cfg))
 
         # ---- Assemble Parts ----
-
         part.sequence = sequence
         for segments_combination in itertools.product(*segments_library):
             new_part = part.copy()
@@ -51,17 +58,16 @@ def main():
             part_id += 1
             new_part.part_id = part_id
             solutions.append(new_part)
-            if len(solutions[0].tabs['1'].points) > 14:
-                print("ERROR")
 
     print("--- %s seconds ---" % (time.time() - start_time))
     print(f"Found {len(solutions)} solutions")
 
-    if len(solutions) == 0: 
+    if len(solutions) == 0:
         return
-    
+
     #  ---- plot solutions ----
-    plot_solutions(solutions, plot_cfg = plot_cfg)
+    plot_solutions(solutions, plot_cfg=plot_cfg)
+
 
 if __name__ == '__main__':
     main()
