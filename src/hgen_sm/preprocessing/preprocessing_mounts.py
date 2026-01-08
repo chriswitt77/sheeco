@@ -30,21 +30,23 @@ def adjust_rectangle_for_mounts(rect_dict, min_dist, verbose=False):
     """
     Adjusts a rectangle so that all mount points are at least min_dist from edges.
 
-    This version only moves the specific edges that violate the minimum distance,
-    not both opposite edges. This results in minimal changes to the rectangle.
+    This version moves ONLY the edges that are too close, maintaining rectangularity
+    by adjusting the edge vectors appropriately.
 
     Rectangle structure:
     - Input: A, B, C (three corners)
-    - D = C - AB (fourth corner, from Rectangle class)
-    - Forms rectangle: A---B
-                       |   |
-                       D---C
+    - D = C - AB (fourth corner)
+    - Forms rectangle: A---AB-->B
+                       |         |
+                       AD        |
+                       |         |
+                       D---------C
 
     Strategy:
     - Check each edge individually
-    - Only move edges that are too close to mounts
-    - Move edges away from mounts (perpendicular to edge direction)
-    - Update all affected corners to maintain rectangular shape
+    - For edges that need moving, track which edge (AB/CD or AD/BC)
+    - Adjust only the affected edge vectors
+    - Reconstruct all corners maintaining orthogonality
 
     Args:
         rect_dict: Dictionary with pointA, pointB, pointC and optional 'mounts'
@@ -67,30 +69,30 @@ def adjust_rectangle_for_mounts(rect_dict, min_dist, verbose=False):
     # Calculate D and vectors
     AB = B - A
     D = C - AB
-    BC = C - B
+    AD = D - A
 
     # Convert mount points
     mount_points = [np.array(m, dtype=np.float64) for m in mounts]
 
-    # Calculate normal vector for the plane
-    n = normalize(np.cross(AB, BC))
+    # Track which edges need expansion
+    # We track: which side of each edge pair needs to move
+    needs_expansion = {
+        'AB': 0.0,  # Edge A-B (bottom)
+        'CD': 0.0,  # Edge C-D (top, opposite to AB)
+        'AD': 0.0,  # Edge A-D (left)
+        'BC': 0.0,  # Edge B-C (right, opposite to AD)
+    }
 
-    # Track which edges need to be moved and by how much
-    # Format: {edge_name: (expansion_distance, perpendicular_direction)}
-    edge_expansions = {}
-
-    # Check each edge individually
-    edges_info = [
-        ("AB", A, B, AB),
-        ("BC", B, C, BC),
-        ("CD", C, D, -AB),  # CD is parallel to AB but opposite direction
-        ("DA", D, A, -BC),  # DA is parallel to BC but opposite direction
+    # Check each edge
+    edges_to_check = [
+        ('AB', A, B),
+        ('BC', B, C),
+        ('CD', C, D),
+        ('AD', D, A),  # Note: AD goes from D to A in the loop
     ]
 
-    for edge_name, start, end, edge_vec in edges_info:
+    for edge_name, start, end in edges_to_check:
         max_expansion = 0.0
-
-        # Check all mounts against this edge
         for mount in mount_points:
             dist = point_to_line_distance_3d(mount, start, end)
             if dist < min_dist:
@@ -99,81 +101,85 @@ def adjust_rectangle_for_mounts(rect_dict, min_dist, verbose=False):
                 if verbose:
                     print(f"  Mount too close to {edge_name}: {dist:.2f} < {min_dist}, need {needed:.2f}")
 
-        if max_expansion > 0:
-            # Calculate perpendicular direction (outward from rectangle)
-            perp = normalize(np.cross(n, edge_vec))
-
-            # Determine if perp points outward
-            # Use rectangle center to determine direction
-            rect_center = (A + B + C + D) / 4.0
-            edge_mid = (start + end) / 2.0
-            to_center = rect_center - edge_mid
-
-            # If perp points toward center, flip it
-            if np.dot(perp, to_center) > 0:
-                perp = -perp
-
-            edge_expansions[edge_name] = (max_expansion, perp)
+        needs_expansion[edge_name] = max_expansion
 
     # No adjustment needed
-    if not edge_expansions:
+    if all(v == 0.0 for v in needs_expansion.values()):
         return rect_dict.copy()
 
     if verbose:
-        print(f"  → Moving edges: {', '.join(edge_expansions.keys())}")
+        moved_edges = [k for k, v in needs_expansion.items() if v > 0]
+        print(f"  → Moving edges: {', '.join(moved_edges)}")
 
-    # Apply expansions by moving corners
-    # Each corner is at the intersection of two edges
-    # We need to move corners based on which edges need to move
+    # Now adjust the vectors based on which edges need to move
+    # Key insight:
+    # - AB and CD are opposite edges (parallel to AB vector)
+    # - AD and BC are opposite edges (parallel to AD vector)
 
-    # Start with original corners
-    new_A = A.copy()
-    new_B = B.copy()
-    new_C = C.copy()
+    # Calculate adjustments to the base vectors
+    # If AB needs to move, shift A in -AD direction
+    # If CD needs to move, extend AD vector
+    # If AD needs to move, shift A in -AB direction
+    # If BC needs to move, extend AB vector
 
-    # Corner A is on edges AB and DA
-    if "AB" in edge_expansions:
-        exp, perp = edge_expansions["AB"]
-        new_A += exp * perp
-        if verbose:
-            print(f"    A moved by {exp:.2f} due to AB")
-    if "DA" in edge_expansions:
-        exp, perp = edge_expansions["DA"]
-        new_A += exp * perp
-        if verbose:
-            print(f"    A moved by {exp:.2f} due to DA")
+    adjustment_A = np.zeros(3)  # How much to shift point A
+    adjustment_AB = np.zeros(3)  # How much to extend AB vector
+    adjustment_AD = np.zeros(3)  # How much to extend AD vector
 
-    # Corner B is on edges AB and BC
-    if "AB" in edge_expansions:
-        exp, perp = edge_expansions["AB"]
-        new_B += exp * perp
-        if verbose:
-            print(f"    B moved by {exp:.2f} due to AB")
-    if "BC" in edge_expansions:
-        exp, perp = edge_expansions["BC"]
-        new_B += exp * perp
-        if verbose:
-            print(f"    B moved by {exp:.2f} due to BC")
+    # Normalize the vectors for direction
+    AB_dir = normalize(AB)
+    AD_dir = normalize(AD)
 
-    # Corner C is on edges BC and CD
-    if "BC" in edge_expansions:
-        exp, perp = edge_expansions["BC"]
-        new_C += exp * perp
+    # Edge AB needs to move: shift A away from AB (in -AD direction)
+    if needs_expansion['AB'] > 0:
+        adjustment_A -= needs_expansion['AB'] * AD_dir
         if verbose:
-            print(f"    C moved by {exp:.2f} due to BC")
-    if "CD" in edge_expansions:
-        exp, perp = edge_expansions["CD"]
-        new_C += exp * perp
-        if verbose:
-            print(f"    C moved by {exp:.2f} due to CD")
+            print(f"    Shifting A by {needs_expansion['AB']:.2f} away from AB")
 
-    # Note: D is implicit (D = C - AB), so we don't need to track it separately
+    # Edge CD needs to move: extend AD vector
+    if needs_expansion['CD'] > 0:
+        adjustment_AD += needs_expansion['CD'] * AD_dir
+        if verbose:
+            print(f"    Extending AD by {needs_expansion['CD']:.2f} for CD")
+
+    # Edge AD needs to move: shift A away from AD (in -AB direction)
+    if needs_expansion['AD'] > 0:
+        adjustment_A -= needs_expansion['AD'] * AB_dir
+        if verbose:
+            print(f"    Shifting A by {needs_expansion['AD']:.2f} away from AD")
+
+    # Edge BC needs to move: extend AB vector
+    if needs_expansion['BC'] > 0:
+        adjustment_AB += needs_expansion['BC'] * AB_dir
+        if verbose:
+            print(f"    Extending AB by {needs_expansion['BC']:.2f} for BC")
+
+    # Apply adjustments
+    new_A = A + adjustment_A
+    new_AB = AB + adjustment_AB
+    new_AD = AD + adjustment_AD
+
+    # Reconstruct all corners from adjusted vectors
+    new_B = new_A + new_AB
+    new_C = new_A + new_AB + new_AD
+    # new_D = new_A + new_AD (implicit)
 
     # Create adjusted rectangle
     adjusted = rect_dict.copy()
     adjusted["pointA"] = new_A.tolist()
     adjusted["pointB"] = new_B.tolist()
     adjusted["pointC"] = new_C.tolist()
+
+    # Verify rectangularity
+    AB_check = new_B - new_A
+    D_check = new_C - AB_check
+    AD_check = D_check - new_A
+    dot = np.dot(AB_check, AD_check)
+
+    if abs(dot) > 1e-6 and verbose:
+        print(f"  WARNING: Adjusted rectangle not rectangular! AB·AD = {dot:.6f}")
+    elif verbose:
+        print(f"  ✓ Rectangularity maintained: AB·AD = {dot:.10f}")
 
     return adjusted
 

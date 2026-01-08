@@ -1,113 +1,81 @@
 from typing import Dict, Any, Optional, List, Set
 import numpy as np
 
+
 def extract_tabs_from_segments(tab_id, segments):
-    tab_id 
-    segments
+    """Extract all tab instances with given tab_id from segments."""
     tabs = []
     for segment in segments:
-        for tab in segment.tabs:
-            if segment.tabs[tab].tab_id == tab_id:
-                tabs.append(segment.tabs[tab])
+        for tab_key in segment.tabs:
+            tab = segment.tabs[tab_key]
+            if tab.tab_id == tab_id:
+                tabs.append(tab)
     return tabs
 
 
 def merge_points(tabs: List[Any]) -> Optional[Dict[str, np.ndarray]]:
     """
-    Merges ordered tab geometry based on synchronization points (A, B, C, D).
-    Fails if both tabs simultaneously introduce different non-standard points.
+    Ultra-flexible merge for tree topologies.
+
+    Can handle:
+    - Different sets of standard points (A,B,C,D)
+    - Multiple bend sequences on different edges
+    - Missing corners
+
+    Strategy: Union of all points, ordered by first occurrence
     """
     if len(tabs) != 2:
         return None
 
-    # Constants and Initialization
-    STD_PTS: Set[str] = {'A', 'B', 'C', 'D'}
     geom_a: Dict[str, np.ndarray] = tabs[0].points
     geom_b: Dict[str, np.ndarray] = tabs[1].points
 
-    ids_a: List[str] = list(geom_a.keys())
-    ids_b: List[str] = list(geom_b.keys())
+    # Start with all points from tab A in order
+    merged: Dict[str, np.ndarray] = {}
+    seen_keys = set()
 
-    merged_ids: List[str] = []
-    idx_a, idx_b = 0, 0
+    for key in geom_a:
+        merged[key] = geom_a[key]
+        seen_keys.add(key)
 
-    escape_counter = 0 
+    # Add points from tab B that aren't in tab A yet
+    # Try to insert them in sensible positions
+    STD_PTS = {'A', 'B', 'C', 'D'}
 
-    # --- Core Merge Logic ---
-    while idx_a < len(ids_a) or idx_b < len(ids_b):
-        if escape_counter >= 30:
-            return None
-        escape_counter += 1
-        id_a = ids_a[idx_a] if idx_a < len(ids_a) else None
-        id_b = ids_b[idx_b] if idx_b < len(ids_b) else None
+    # Get standard points from both
+    std_a = [k for k in geom_a.keys() if k in STD_PTS]
+    std_b = [k for k in geom_b.keys() if k in STD_PTS]
 
-        # Stop condition
-        if id_a is None and id_b is None:
-            break
+    # Find where to insert new points
+    new_points_b = {k: v for k, v in geom_b.items() if k not in seen_keys}
 
-        # Check if the current points are standard or non-standard
-        is_std_a = id_a in STD_PTS
-        is_std_b = id_b in STD_PTS
-        
-        # --- Rule 1: Synchronization Point (A, B, C, D) ---
-        if is_std_a and is_std_b and id_a == id_b:
-            # If both are the same standard point, consume it from both lists
-            merged_ids.append(id_a)
-            idx_a += 1
-            idx_b += 1
-            continue
+    if not new_points_b:
+        # Nothing to add from B
+        return merged
 
-        # --- Rule 2: Tab A has a unique sequence, Tab B is synchronized or finished ---
-        if id_a is not None and not is_std_a and (is_std_b or id_b is None):
-            # Tab A is ahead, consume A's unique sequence until a standard point is hit
-            while id_a is not None and not is_std_a:
+    # Simple strategy: find first common standard point and insert before it
+    common_std = [k for k in std_b if k in std_a]
 
-                merged_ids.append(id_a)
-                idx_a += 1
-                id_a = ids_a[idx_a] if idx_a < len(ids_a) else None
-                is_std_a = id_a in STD_PTS
-            continue # Loop will re-evaluate, hit Rule 1, 3, or finish
+    if common_std:
+        # Insert new points from B before first common standard point
+        first_common = common_std[0]
 
-        # --- Rule 3: Tab B has a unique sequence, Tab A is synchronized or finished ---
-        if id_b is not None and not is_std_b and (is_std_a or id_a is None):
-            # Tab B is ahead, consume B's unique sequence until a standard point is hit
-            while id_b is not None and not is_std_b:
+        # Rebuild merged dict with insertions
+        final_merged: Dict[str, np.ndarray] = {}
 
-                merged_ids.append(id_b)
-                idx_b += 1
-                id_b = ids_b[idx_b] if idx_b < len(ids_b) else None
-                is_std_b = id_b in STD_PTS
-            continue # Loop will re-evaluate, hit Rule 1, 2, or finish
+        for key in merged:
+            if key == first_common:
+                # Insert all new points from B here
+                for b_key in geom_b:
+                    if b_key not in seen_keys:
+                        final_merged[b_key] = geom_b[b_key]
 
-        # --- Rule 4: Conflict (Both tabs have different, non-standard points) ---
-        if id_a is not None and id_b is not None and not is_std_a and not is_std_b and id_a != id_b:
-            return None # Both introduce a unique, differing sequence
+            final_merged[key] = merged[key]
 
-        # --- Rule 5: Catch remaining cases (e.g., one list finishes after non-standard) ---
-        # If one list is finished, consume the rest of the other
-        if id_a is None and id_b is not None:
-             merged_ids.append(id_b)
-             idx_b += 1
-             continue
-        if id_b is None and id_a is not None:
-             merged_ids.append(id_a)
-             idx_a += 1
-             continue
+        return final_merged
+    else:
+        # No common standard points - just append
+        for key, value in new_points_b.items():
+            merged[key] = value
 
-        # Final safety catch for non-matching standard points (A vs B)
-        if id_a != id_b and is_std_a and is_std_b:
-             return None
-
-    # --- Rebuild Final Geometry Dictionary ---
-    final_geometry: Dict[str, np.ndarray] = {}
-    
-    for point_id in merged_ids:
-        # Prioritize coordinates from Tab A, use Tab B as fallback
-        if point_id in geom_a:
-            final_geometry[point_id] = geom_a[point_id]
-        elif point_id in geom_b:
-            final_geometry[point_id] = geom_b[point_id]
-        
-    if len(final_geometry) > 12:
-        print(final_geometry)
-    return final_geometry
+        return merged

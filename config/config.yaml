@@ -1,18 +1,25 @@
 topologies:
-  simple_topology: true
+  simple_topology: false            # Use simple linear topology (tab_0 -> tab_1 -> tab_2 -> ...)
+  tree_topology: true               # Enable tree structures (tabs can connect to multiple others)
+
+# Topology limiting and prioritization (for tree_topology)
+  max_topologies: 100               # Maximum number of topologies to generate (null = no limit)
+  prioritize: 'none'            # Prioritization strategy:
+                                    #   'balanced' - prefer evenly distributed connections
+                                    #   'linear' - prefer linear chain structures
+                                    #   'star' - prefer star structures (one central tab)
+                                    #   'none' - no prioritization (first N topologies)
 
 mount_preprocessing:
-  enabled: true
-  min_mount_distance: 5.0
-  verbose: true
+  enabled: true                     # Enable mount point preprocessing
+  verbose: true                     # Print preprocessing information
 
 surface_separation:
-  auto_split: true
-  min_mounts_for_split: 2
-  mounts_per_surface: 1
-  split_along: 'auto'
-  gap_width: 10
-  verbose: true
+  auto_split: true                  # Enable automatic surface splitting
+  min_mounts_for_split: 2           # Split if surface has >= 2 mounts
+  mounts_per_surface: 1             # Target number of mounts per surface after split
+  split_along: 'auto'               # Split direction: 'AB', 'AC', or 'auto'
+  verbose: true                     # Print split information
 
 design_exploration:
   single_bend: True
@@ -23,8 +30,9 @@ filter:
   Min Bend Angle: False
   Tabs cover Rects: True
   Lines Cross: True
-  Collisions: True
+  Collisions: False
   Too thin segments: False
+  verbose: true
 
 plot:
   Rectangles: True
