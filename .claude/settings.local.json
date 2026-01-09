@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile:*)",
+      "Bash(where python)",
+      "Bash(py:*)",
+      "Bash(python:*)",
+      "Bash(powershell:*)",
+      "Bash(del \"C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco\\\\test_write.py\")",
+      "Bash(pip install:*)",
+      "Bash(python3.13:*)",
+      "Bash(\"C:/Users/Wittig/AppData/Local/Programs/Python/Python313/python.exe\" tests/test_mount_processing.py)",
+      "Bash(PYTHONIOENCODING=utf-8 \"C:/Users/Wittig/AppData/Local/Programs/Python/Python313/python.exe\":*)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)"
+    ]
+  }
+}
