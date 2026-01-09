@@ -8,19 +8,22 @@ from .bend import Bend
 
 class Tab:
     """Represents a single, planar section of the SM part"""
-    def __init__(self, tab_id: int, rectangle = None, mounts = None, points = None):
+    def __init__(self, tab_id: int, rectangle = None, mounts = None, points = None,
+                 original_id: str = None):
         self.tab_id = tab_id
         self.rectangle: 'Rectangle' = rectangle or None
-        if self.rectangle != None:    
+        # Track original tab ID for split surfaces (used to prevent sibling connections)
+        self.original_id = original_id
+        if self.rectangle != None:
             self.points: Dict[str, np.ndarray] = {
                 'A': rectangle.points['A'],
                 'B': rectangle.points['B'],
                 'C': rectangle.points['C'],
                 'D': rectangle.points['D']
             }
-        elif self.rectangle == None:# and self.points != None: 
+        elif self.rectangle == None:# and self.points != None:
             self.points = points
-        self.mounts = []
+        self.mounts = mounts if mounts is not None else []
         self.bends: list['Bend'] = []
         # self.corner_usage: Dict[str, Optional[str]] = {'A': None, 'B': None, 'C': None, 'D': None}
 

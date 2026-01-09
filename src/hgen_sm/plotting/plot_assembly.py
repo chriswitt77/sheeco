@@ -37,36 +37,39 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
 
     # Plot rectangles
     if plot_cfg.get('Rectangles', False):
-        
+
         # 1. Loop through all tabs in the part
         for tab_id, tab_obj in part.tabs.items():
-            
-            # Check if this specific tab has a 'rectangles' attribute/property
+
+            # Check if this specific tab has a 'rectangle' attribute/property
             if getattr(tab_obj, 'rectangle', None):
                 corners = tab_obj.rectangle.points
+                # Rectangle geometry: A -> B -> C -> D forms the perimeter
                 pts = np.array([corners['A'], corners['B'], corners['C'], corners['D']])
-                
+
                 # Define the single quadrilateral face (4 points: 0, 1, 2, 3)
+                # Order A -> B -> C -> D ensures correct winding
                 faces = np.hstack([[4, 0, 1, 2, 3]])
-                
+
                 rectangle_mesh = pv.PolyData(pts, faces)
-                
-                label=f"Tab_{tab_id}"
+
+                label = f"Tab_{tab_id}"
                 plotter.add_mesh(
-                    rectangle_mesh, 
-                    color=color_rectangle, 
-                    opacity=0.9, 
+                    rectangle_mesh,
+                    color=color_rectangle,
+                    opacity=0.9,
                     show_edges=True,
                 )
 
                 center_point = pts.mean(axis=0)
-                plotter.add_point_labels(
-                        center_point,
-                        [label],
-                        font_size=standard_font_size,
-                        always_visible=True,
-                        show_points=False # Do not plot a visible dot at the center
-                    )
+                if plot_cfg.get('Labels', False):
+                    plotter.add_point_labels(
+                            center_point,
+                            [label],
+                            font_size=standard_font_size,
+                            always_visible=True,
+                            show_points=False  # Do not plot a visible dot at the center
+                        )
 
     if plot_cfg.get('Tabs', False) and getattr(part, 'tabs', None):   
         for tab_id, tab_obj in part.tabs.items():
@@ -101,6 +104,7 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                         )
     
     if plot_cfg.get('Flanges', False) and getattr(part, 'tabs', None):
+        first_flange_plotted = False
         for tab_id, tab_obj in part.tabs.items():
             # Group points by the numeric index in their key (e.g., '01', '12')
             flanges = {}
@@ -110,7 +114,7 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                     idx = "".join(filter(str.isdigit, p_id))
                     if idx not in flanges:
                         flanges.update({idx: {}})
-                    flanges[idx][p_id] = coords 
+                    flanges[idx][p_id] = coords
 
             # Plot each detected flange
             for idx, f_points in flanges.items():
@@ -118,13 +122,22 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                 if len(f_points) == 4:
                     # Sort points to ensure a clean quadrilateral (BPL -> BPR -> FPR -> FPL)
                     # This prevents 'bow-tie' artifacts in the mesh
-                    # ordered_keys = [f"BP{idx}L", f"BP{idx}R", f"FP{idx}R", f"FP{idx}L"]
-                    
+                    ordered_keys = [f"BP{idx}L", f"BP{idx}R", f"FP{idx}R", f"FP{idx}L"]
+
                     try:
+                        # Try ordered keys first for proper quadrilateral winding
+                        pts = np.array([f_points[k] for k in ordered_keys])
+                    except KeyError:
+                        # Fallback to whatever order we have
                         pts = np.array([f_points[k] for k in f_points])
-                        # pts = np.array(f_points)
+
+                    try:
                         faces = np.hstack([[4, 0, 1, 2, 3]])
                         flange_mesh = pv.PolyData(pts, faces)
+
+                        # Only add label for first flange to avoid legend clutter
+                        label = f"Flange {idx}" if not first_flange_plotted else None
+                        first_flange_plotted = True
 
                         plotter.add_mesh(
                             flange_mesh,
@@ -132,10 +145,50 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                             opacity=0.9,
                             show_edges=True,
                             line_width=2,
-                            label=f"Flange {idx}" if tab_id == "0" else None # Avoid legend clutter
+                            label=label
                         )
-                    except KeyError:
-                        continue # Skip if naming convention doesn't match exactly
+                    except Exception:
+                        continue  # Skip if there's any issue with the mesh
+
+    # Plot mounts as red circles on the tab plane
+    if plot_cfg.get('Mounts', True) and getattr(part, 'tabs', None):
+        color_mount = "red"
+        for tab_id, tab_obj in part.tabs.items():
+            if hasattr(tab_obj, 'mounts') and tab_obj.mounts:
+                # Calculate plane normal from tab points
+                if 'A' in tab_obj.points and 'B' in tab_obj.points and 'C' in tab_obj.points:
+                    A = np.array(tab_obj.points['A'])
+                    B = np.array(tab_obj.points['B'])
+                    C = np.array(tab_obj.points['C'])
+                    AB = B - A
+                    BC = C - B
+                    normal = np.cross(AB, BC)
+                    normal_len = np.linalg.norm(normal)
+                    if normal_len > 1e-9:
+                        normal = normal / normal_len
+                    else:
+                        normal = np.array([0, 0, 1])  # Fallback
+                else:
+                    normal = np.array([0, 0, 1])  # Fallback
+
+                for mount in tab_obj.mounts:
+                    if mount.global_coords is not None:
+                        center = mount.global_coords
+                        radius = mount.size
+                        # Create a disc (filled circle) on the tab plane
+                        disc = pv.Disc(center=center, inner=0, outer=radius, normal=normal, c_res=32)
+                        plotter.add_mesh(
+                            disc,
+                            color=color_mount,
+                            opacity=1.0,
+                        )
+                        if plot_cfg.get('Labels', False):
+                            plotter.add_point_labels(
+                                center,
+                                [f"M_{tab_id}"],
+                                font_size=standard_font_size,
+                                show_points=False
+                            )
 
     # Solution ID
     if solution_idx is not None and len_solutions is not None:

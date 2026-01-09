@@ -2,8 +2,10 @@ from src.hgen_sm.part_assembly.merge_helpers import extract_tabs_from_segments, 
 from src.hgen_sm.filters import collision_filter
 
 def part_assembly(part, segments, filter_cfg):
-    new_tabs_dict = {}
-    flat_sequence = [] 
+    # Start with existing tabs to preserve unconnected ones (e.g., split surfaces)
+    new_tabs_dict = {tab_id: tab for tab_id, tab in part.tabs.items()}
+
+    flat_sequence = []
     for segment in segments:
         for _, tab_local_id in enumerate(segment.tabs):
             tab_id = segment.tabs[tab_local_id].tab_id

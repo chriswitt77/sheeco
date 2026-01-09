@@ -1,6 +1,13 @@
 topologies:
-  simple_topology: true
+  simple_topology: true      # Sequential chain: 0-1, 1-2, 2-3, ...
+  tree_topology: false       # Spanning trees with different roots
+  all_pairs: false           # All valid pairs (fully connected)
 
+surface_separation:
+  auto_split: true           # Enable automatic surface splitting for multiple mounts
+  min_screws_for_split: 2    # Minimum number of mounts to trigger splitting
+  screws_per_surface: 1      # Target number of mounts per surface after splitting
+  split_along: auto          # 'AB', 'AC', or 'auto' (chooses longer edge)
 
 design_exploration:
   single_bend: True
@@ -21,6 +28,7 @@ plot:
   Flanges: True
   Triangulate Tabs: True
   Corner Points: False
+  Mounts: True
   
   Labels: False   # Turn off to increase plotting speed
 

@@ -2,17 +2,20 @@ A = [
     {
         'pointA': [30, 30, 0],
         'pointB': [30, 0, 0],
-        'pointC': [80, 0, 0]
+        'pointC': [80, 0, 0],
+        'mounts': []  # Optional: list of 3D mount coordinates
     },
     {
         'pointA': [0, 80, 40],
         'pointB': [0, 40, 40],
-        'pointC': [0, 40, 80]
+        'pointC': [0, 40, 80],
+        'mounts': []
     },
     {
         'pointA': [30, 0, 100],
         'pointB': [30, 30, 100],
-        'pointC': [80, 30, 100]
+        'pointC': [80, 30, 100],
+        'mounts': []
     }
 ]
 
@@ -91,6 +94,26 @@ same_plane = [
     }
 ]
 
+# Example with mounts - demonstrates surface splitting
+with_mounts = [
+    {
+        'pointA': [50, 0, 0],
+        'pointB': [50, 100, 0],
+        'pointC': [100, 100, 0],
+        'mounts': [
+            [70, 25, 0],   # Mount near left side
+            [75, 80, 0]    # Mount near right side - will trigger split
+        ]
+    },
+    {
+        'pointA': [0, 80, 40],
+        'pointB': [0, 40, 40],
+        'pointC': [0, 40, 80],
+        'mounts': [
+            [0, 50, 60]   # Single mount - no split needed
+        ]
+    }
+]
 
 
-RECTANGLE_INPUTS = D
+RECTANGLE_INPUTS = with_mounts
