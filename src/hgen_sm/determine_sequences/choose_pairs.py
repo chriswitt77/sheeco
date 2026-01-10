@@ -1,5 +1,6 @@
 from typing import List, Dict, Set, Tuple
 from itertools import combinations
+import copy
 
 from .surface_separation import separate_surfaces, are_siblings
 
@@ -9,9 +10,67 @@ def determine_sequences(part, cfg):
     Determine the assembly topology (how tabs should be connected with bends).
 
     This function:
-    1. First performs surface separation if enabled (splits tabs with multiple mounts)
-    2. Then generates sequences of tab pairs for assembly
-    3. Ensures sibling surfaces (split from same original) are not directly connected
+    1. Optionally generates sequences for the original (unseparated) part
+    2. Performs surface separation if enabled (splits tabs with multiple mounts)
+    3. Generates sequences of tab pairs for assembly
+    4. Ensures sibling surfaces (split from same original) are not directly connected
+
+    Args:
+        part: Part object containing tabs
+        cfg: Configuration dictionary
+
+    Returns:
+        List of (part, sequences) tuples, where:
+        - part: The Part object (original or with separated surfaces)
+        - sequences: List of sequences for that part variant
+    """
+    sep_cfg = cfg.get('surface_separation', {})
+    auto_split = sep_cfg.get('auto_split', True)
+    include_unseparated = sep_cfg.get('include_unseparated', False)
+
+    variants = []
+
+    # Check if separation would actually split anything
+    will_split = False
+    if auto_split:
+        min_screws = sep_cfg.get('min_screws_for_split', 2)
+        for tab in part.tabs.values():
+            if hasattr(tab, 'mounts') and tab.mounts is not None:
+                if len(tab.mounts) >= min_screws:
+                    will_split = True
+                    break
+
+    # Variant 1: Unseparated (original) part
+    if include_unseparated and will_split:
+        # Deep copy the part to preserve original state
+        unseparated_part = part.copy()
+        unseparated_sequences = _generate_sequences_for_part(unseparated_part, cfg)
+        if unseparated_sequences:
+            variants.append((unseparated_part, unseparated_sequences))
+
+    # Variant 2: Separated part (or original if no separation needed)
+    if auto_split:
+        separated_part = separate_surfaces(part, cfg)
+    else:
+        separated_part = part
+
+    separated_sequences = _generate_sequences_for_part(separated_part, cfg)
+    if separated_sequences:
+        variants.append((separated_part, separated_sequences))
+
+    # If no variants generated, return empty list
+    if not variants:
+        # Fallback: return original part with simple sequence
+        fallback_sequences = _generate_sequences_for_part(part, cfg)
+        if fallback_sequences:
+            variants.append((part, fallback_sequences))
+
+    return variants
+
+
+def _generate_sequences_for_part(part, cfg):
+    """
+    Generate sequences for a given part based on topology configuration.
 
     Args:
         part: Part object containing tabs
@@ -20,9 +79,6 @@ def determine_sequences(part, cfg):
     Returns:
         List of sequences, where each sequence is a list of [tab_x_id, tab_z_id] pairs
     """
-    # Step 1: Surface separation (split tabs with multiple mounts)
-    part = separate_surfaces(part, cfg)
-
     topo_cfg = cfg.get('topologies', {})
     tabs = part.tabs
     tab_ids: List[str] = [tab.tab_id for tab in tabs.values()]

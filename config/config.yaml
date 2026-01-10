@@ -5,6 +5,7 @@ topologies:
 
 surface_separation:
   auto_split: true           # Enable automatic surface splitting for multiple mounts
+  include_unseparated: true  # Also generate solutions without surface separation
   min_screws_for_split: 2    # Minimum number of mounts to trigger splitting
   screws_per_surface: 1      # Target number of mounts per surface after splitting
   split_along: auto          # 'AB', 'AC', or 'auto' (chooses longer edge)
