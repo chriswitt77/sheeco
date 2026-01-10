@@ -71,23 +71,28 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                             show_points=False  # Do not plot a visible dot at the center
                         )
 
-    if plot_cfg.get('Tabs', False) and getattr(part, 'tabs', None):   
+    if plot_cfg.get('Tabs', False) and getattr(part, 'tabs', None):
         for tab_id, tab_obj in part.tabs.items():
-            if tab_obj.points: 
+            if tab_obj.points:
                 points_list = list(tab_obj.points.values())
-                points_array = np.array(points_list) 
+                points_array = np.array(points_list)
                 num_points = points_array.shape[0]
+
+                # For tabs with more than 4 points (intermediate tabs), always triangulate
+                # because they may be non-convex or non-planar
+                should_triangulate = plot_cfg.get('Triangulate Tabs', False) or num_points > 4
+
                 faces = np.hstack([[num_points], np.arange(num_points)])
-                if plot_cfg.get('Triangulate Tabs', False):
+                if should_triangulate:
                     mesh = pv.PolyData(points_array, faces=faces).triangulate()
-                else: 
+                else:
                     mesh = pv.PolyData(points_array, faces=faces)
                 plotter.add_mesh(
                     mesh,
                     color=color_tabs,
                     opacity=0.8,
                     show_edges=False,
-                    style='surface', 
+                    style='surface',
                     label=f"Tab {tab_id}"
                 )
 
@@ -106,14 +111,15 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     if plot_cfg.get('Flanges', False) and getattr(part, 'tabs', None):
         first_flange_plotted = False
         for tab_id, tab_obj in part.tabs.items():
-            # Group points by the numeric index in their key (e.g., '01', '12')
+            # Group points by their full identifier (between BP/FP and L/R)
             flanges = {}
             for p_id, coords in tab_obj.points.items():
-                if "BP" in p_id or "FP" in p_id:
-                    # Extract numeric index (e.g., 'BP01L' -> '01')
-                    idx = "".join(filter(str.isdigit, p_id))
+                if p_id.startswith("BP") or p_id.startswith("FP"):
+                    # Extract full index (e.g., 'BP0_0_0_01L' -> '0_0_0_01', 'FP01R' -> '01')
+                    # Remove prefix (BP/FP) and suffix (L/R)
+                    idx = p_id[2:-1]  # Strip first 2 chars (BP/FP) and last char (L/R)
                     if idx not in flanges:
-                        flanges.update({idx: {}})
+                        flanges[idx] = {}
                     flanges[idx][p_id] = coords
 
             # Plot each detected flange
@@ -128,8 +134,15 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                         # Try ordered keys first for proper quadrilateral winding
                         pts = np.array([f_points[k] for k in ordered_keys])
                     except KeyError:
-                        # Fallback to whatever order we have
-                        pts = np.array([f_points[k] for k in f_points])
+                        # Fallback: sort by key type to get proper winding
+                        bp_keys = sorted([k for k in f_points if k.startswith("BP")])
+                        fp_keys = sorted([k for k in f_points if k.startswith("FP")])
+                        if len(bp_keys) == 2 and len(fp_keys) == 2:
+                            # BPL -> BPR -> FPR -> FPL ordering
+                            ordered_keys = [bp_keys[0], bp_keys[1], fp_keys[1], fp_keys[0]]
+                            pts = np.array([f_points[k] for k in ordered_keys])
+                        else:
+                            pts = np.array([f_points[k] for k in f_points])
 
                     try:
                         faces = np.hstack([[4, 0, 1, 2, 3]])

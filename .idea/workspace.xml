@@ -4,9 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="bugged">
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="new 90-degree bend-strategy">
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/filters.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/filters.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,13 +119,22 @@
       <option name="project" value="LOCAL" />
       <updated>1767950684704</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="new 90-degree bend-strategy">
+      <option name="closed" value="true" />
+      <created>1767961380549</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1767961380549</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="adjust for pycharm" />
     <MESSAGE value="Mindestlochabstand und rudimentäre Flächentrennung implementiert" />
     <MESSAGE value="bugged" />
-    <option name="LAST_COMMIT_MESSAGE" value="bugged" />
+    <MESSAGE value="new 90-degree bend-strategy" />
+    <option name="LAST_COMMIT_MESSAGE" value="new 90-degree bend-strategy" />
   </component>
 </project>

@@ -11,7 +11,14 @@
       "Bash(python3.13:*)",
       "Bash(\"C:/Users/Wittig/AppData/Local/Programs/Python/Python313/python.exe\" tests/test_mount_processing.py)",
       "Bash(PYTHONIOENCODING=utf-8 \"C:/Users/Wittig/AppData/Local/Programs/Python/Python313/python.exe\":*)",
-      "Bash(PYTHONIOENCODING=utf-8 python:*)"
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(C:/Users/Wittig/AppData/Local/Programs/Python/Python313/python.exe:*)",
+      "Bash(cat:*)",
+      "Bash(cmd /c:*)",
+      "Bash(powershell.exe -NoProfile -Command \"Set-Location ''C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco''; python test_diagonal_fix.py\")",
+      "Bash(powershell.exe -NoProfile -Command \"where.exe python\")",
+      "Bash(powershell.exe -NoProfile -Command \"Set-Location ''C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco''; py test_diagonal_fix.py\")",
+      "Bash(powershell.exe:*)"
     ]
   }
 }

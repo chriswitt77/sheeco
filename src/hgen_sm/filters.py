@@ -1,7 +1,7 @@
 from config.design_rules import min_flange_width, min_bend_angle
 
 import numpy as np
-from shapely import Polygon
+from shapely import Polygon, make_valid
 from shapely.geometry import Polygon
 
 from typing import Set, Tuple
@@ -156,14 +156,24 @@ def _bounds_collide_with_gap(pts1, pts2, gap):
 
 def _precise_poly_collision(pts1, pts2, tol):
     """Checks if two 3D polygons actually intersect."""
-    
-    poly1 = Polygon(pts1[:, :2]) 
+
+    poly1 = Polygon(pts1[:, :2])
     poly2 = Polygon(pts2[:, :2])
-    
+
+    # Fix invalid (self-intersecting) polygons
+    if not poly1.is_valid:
+        poly1 = make_valid(poly1)
+    if not poly2.is_valid:
+        poly2 = make_valid(poly2)
+
     # Intersection must have area to be a 'collision', not just a touch
-    if poly1.intersects(poly2):
-        if poly1.intersection(poly2).area > tol:
-            return True
+    try:
+        if poly1.intersects(poly2):
+            if poly1.intersection(poly2).area > tol:
+                return True
+    except Exception:
+        # If geometry operations fail, assume no collision
+        return False
     return False
 
 def thin_segment_filter(segment):
