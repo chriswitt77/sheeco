@@ -20,7 +20,8 @@
       "Bash(powershell.exe -NoProfile -Command \"Set-Location ''C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco''; py test_diagonal_fix.py\")",
       "Bash(powershell.exe:*)",
       "Bash(cmd.exe /c \"py tests/test_segment_collision.py\")",
-      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco && py tests\\\\test_segment_collision.py\")"
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco && py tests\\\\test_segment_collision.py\")",
+      "Bash(git checkout:*)"
     ]
   }
 }

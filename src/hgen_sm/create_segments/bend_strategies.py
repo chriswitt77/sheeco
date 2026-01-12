@@ -140,8 +140,11 @@ def one_bend(segment, filter_cfg):
     """
     Generate single-bend connections between two tabs.
 
-    Both tabs get flange areas added so the bending line lies outside both
-    initial tab geometries. This ensures proper manufacturability.
+    Logic follows the same pattern as two_bends:
+    1. Define the bend line (from plane intersection)
+    2. Project corner points onto bend line to get bending points (BP)
+    3. Create flange points (FP) extending from BP toward each plane by min_flange_length
+    4. Connection: Corner Point → Flange Point → Bending Point
     """
     tab_x = segment.tabs['tab_x']
     tab_x_id = tab_x.tab_id
@@ -165,31 +168,19 @@ def one_bend(segment, filter_cfg):
 
     bend = Bend(position=intersection["position"], orientation=intersection["orientation"])
 
-    # Use only adjacent edge pairs for cleaner geometry
+    # Use adjacent edge pairs
     rect_x_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A'),
                     ('B', 'A'), ('C', 'B'), ('D', 'C'), ('A', 'D')]
     rect_z_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A'),
                     ('B', 'A'), ('C', 'B'), ('D', 'C'), ('A', 'D')]
 
     segment_library = []
+
     for pair_x in rect_x_edges:
         CP_xL_id = pair_x[0]
         CP_xL = tab_x.points[CP_xL_id]
         CP_xR_id = pair_x[1]
         CP_xR = tab_x.points[CP_xR_id]
-
-        # Calculate outward direction for tab_x (away from rectangle center)
-        rect_x_center = np.mean([tab_x.points[k] for k in ['A', 'B', 'C', 'D']], axis=0)
-        edge_x_vec = CP_xR - CP_xL
-        edge_x_mid = (CP_xL + CP_xR) / 2
-        out_dir_x = np.cross(edge_x_vec, plane_x.orientation)
-        out_dir_x = normalize(out_dir_x)
-        if np.dot(out_dir_x, edge_x_mid - rect_x_center) < 0:
-            out_dir_x = -out_dir_x
-
-        # Shift corner points outward by min_flange_length to create flange on tab_x
-        CP_xL_shifted = CP_xL + out_dir_x * min_flange_length
-        CP_xR_shifted = CP_xR + out_dir_x * min_flange_length
 
         for pair_z in rect_z_edges:
             CP_zL_id = pair_z[0]
@@ -197,53 +188,42 @@ def one_bend(segment, filter_cfg):
             CP_zR_id = pair_z[1]
             CP_zR = tab_z.points[CP_zR_id]
 
-            # Calculate outward direction for tab_z
-            rect_z_center = np.mean([tab_z.points[k] for k in ['A', 'B', 'C', 'D']], axis=0)
-            edge_z_vec = CP_zR - CP_zL
-            edge_z_mid = (CP_zL + CP_zR) / 2
-            out_dir_z = np.cross(edge_z_vec, plane_z.orientation)
-            out_dir_z = normalize(out_dir_z)
-            if np.dot(out_dir_z, edge_z_mid - rect_z_center) < 0:
-                out_dir_z = -out_dir_z
-
-            # Shift corner points outward by min_flange_length to create flange on tab_z
-            CP_zL_shifted = CP_zL + out_dir_z * min_flange_length
-            CP_zR_shifted = CP_zR + out_dir_z * min_flange_length
-
-            # ---- Bending Points (on the shifted positions) ----
-            BPL = create_bending_point(CP_xL_shifted, CP_zL_shifted, bend)
-            BPR = create_bending_point(CP_xR_shifted, CP_zR_shifted, bend)
+            # ---- Step 1: Calculate Bending Points by projecting corner pairs onto bend line ----
+            BPL = create_bending_point(CP_xL, CP_zL, bend)
+            BPR = create_bending_point(CP_xR, CP_zR, bend)
 
             # ---- FILTER: Is flange wide enough? ----
             if not min_flange_width_filter(BPL=BPL, BPR=BPR):
                 continue
 
-            # Calculate flange points with angle check
+            # ---- Step 2: Calculate Flange Points perpendicular to bend line ----
+            # FP extends from BP perpendicular to the bend line, toward each plane
+            # This is the same calculation used in two_bends
             FPxL, FPxR, FPzL, FPzR, angle_too_small = calculate_flange_points_with_angle_check(
                 BPL, BPR, planeA=plane_x, planeB=plane_z
             )
-
             if angle_too_small:
                 continue
 
-            # ---- Check Crossover
-            if filter_cfg.get('Lines Cross', True):
-                if lines_cross(CP_zL, FPzL, CP_zR, FPzR) or lines_cross(CP_xL, FPxL, CP_xR, FPxR):
-                    continue
+            # ---- Determine L/R correspondence to avoid crossed connections ----
+            # Check if connection lines would cross (using 3D distance check)
+            dist_xL_zL = np.linalg.norm(CP_xL - CP_zL)
+            dist_xL_zR = np.linalg.norm(CP_xL - CP_zR)
+            fp_lines_cross = dist_xL_zR < dist_xL_zL
 
             # ---- Update Segment.tabs ----
             new_segment = segment.copy()
             new_tab_x = new_segment.tabs['tab_x']
             new_tab_z = new_segment.tabs['tab_z']
 
-            # ---- Insert Points in Tab x (with flange) ----
-            # Use corner points for FP to ensure proper connection
+            # ---- Insert Points in Tab x ----
+            # Points go: Corner (CP) → Flange (FP) → Bend (BP)
             CPL = {CP_xL_id: CP_xL}
             bend_points_x = {
-                f"FP{tab_x_id}{tab_z_id}L": CP_xL,
+                f"FP{tab_x_id}{tab_z_id}L": FPxL,
                 f"BP{tab_x_id}{tab_z_id}L": BPL,
                 f"BP{tab_x_id}{tab_z_id}R": BPR,
-                f"FP{tab_x_id}{tab_z_id}R": CP_xR
+                f"FP{tab_x_id}{tab_z_id}R": FPxR
             }
 
             new_tab_x.insert_points(L=CPL, add_points=bend_points_x)
@@ -253,24 +233,22 @@ def one_bend(segment, filter_cfg):
                 rm_point = new_tab_x.rectangle.points[rm_point_id]
                 new_tab_x.remove_point(point={rm_point_id: rm_point})
 
-            # ---- Insert Points in Tab z (with flange) ----
-            # Use corner points for FP to ensure proper connection
+            # ---- Insert Points in Tab z ----
             CPL = {CP_zL_id: CP_zL}
-            z_lines_cross = lines_cross(FPxL, FPzL, FPxR, FPzR)
-            if not z_lines_cross:
+            if not fp_lines_cross:
                 bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}L": CP_zL,
+                    f"FP{tab_z_id}{tab_x_id}L": FPzL,
                     f"BP{tab_z_id}{tab_x_id}L": BPL,
                     f"BP{tab_z_id}{tab_x_id}R": BPR,
-                    f"FP{tab_z_id}{tab_x_id}R": CP_zR
+                    f"FP{tab_z_id}{tab_x_id}R": FPzR
                 }
             else:
-                # Lines cross - swap L/R, so also swap corner correspondence
+                # Lines cross - swap L/R to fix correspondence
                 bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}R": CP_zR,
+                    f"FP{tab_z_id}{tab_x_id}R": FPzR,
                     f"BP{tab_z_id}{tab_x_id}R": BPR,
                     f"BP{tab_z_id}{tab_x_id}L": BPL,
-                    f"FP{tab_z_id}{tab_x_id}L": CP_zL
+                    f"FP{tab_z_id}{tab_x_id}L": FPzL
                 }
 
             new_tab_z.insert_points(L=CPL, add_points=bend_points_z)
