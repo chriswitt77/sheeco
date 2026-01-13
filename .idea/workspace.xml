@@ -4,10 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="optional surface separation">
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="fixed one_bend">
       <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/filters.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/filters.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,7 +29,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="segment_generation" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -61,7 +63,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "only__edges",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "C:/Users/Wittig/PycharmProjects/sheeco",
@@ -145,7 +147,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768068801269</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="fixxed one_bend">
+      <option name="closed" value="true" />
+      <created>1768207306906</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1768207306906</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -155,6 +165,7 @@
     <MESSAGE value="new 90-degree bend-strategy" />
     <MESSAGE value="fixed plotting" />
     <MESSAGE value="optional surface separation" />
-    <option name="LAST_COMMIT_MESSAGE" value="optional surface separation" />
+    <MESSAGE value="fixxed one_bend" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixxed one_bend" />
   </component>
 </project>

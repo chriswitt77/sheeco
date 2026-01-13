@@ -1,13 +1,13 @@
 import numpy as np
 import itertools
 
-from config.design_rules import min_flange_length, min_bend_angle
+from config.design_rules import min_flange_length, min_flange_width, min_bend_angle
 from src.hgen_sm.create_segments.geometry_helpers import calculate_plane, calculate_plane_intersection, \
     create_bending_point, calculate_flange_points, next_cp
 from src.hgen_sm.create_segments.utils import line_plane_intersection, project_onto_line, normalize, \
     perp_toward_plane
 from src.hgen_sm.filters import min_flange_width_filter, tab_fully_contains_rectangle, lines_cross, \
-    are_corners_neighbours, minimum_angle_filter, thin_segment_filter
+    are_corners_neighbours, minimum_angle_filter, thin_segment_filter, connection_crosses_tab_filter
 from src.hgen_sm.data import Bend, Tab
 
 
@@ -138,13 +138,17 @@ def calculate_flange_points_with_angle_check(BP1, BP2, planeA, planeB, flange_le
 
 def one_bend(segment, filter_cfg):
     """
-    Generate single-bend connections between two tabs.
+    Generate single-bend connections between two tabs using single edges.
 
-    Logic follows the same pattern as two_bends:
+    Logic:
     1. Define the bend line (from plane intersection)
-    2. Project corner points onto bend line to get bending points (BP)
-    3. Create flange points (FP) extending from BP toward each plane by min_flange_length
-    4. Connection: Corner Point → Flange Point → Bending Point
+    2. For each edge pair (one edge from each tab):
+       - Calculate edge midpoints
+       - Project midpoint-connecting line onto bend line to get BP_mid
+       - Create BPL/BPR by moving from BP_mid by half min_flange_width
+       - Calculate FP perpendicular to bend line toward each plane
+    3. Flange is a separate quadrilateral: [EdgeCornerL, EdgeCornerR, FPR, FPL]
+    4. Tab polygons remain as original rectangles (A, B, C, D)
     """
     tab_x = segment.tabs['tab_x']
     tab_x_id = tab_x.tab_id
@@ -167,12 +171,11 @@ def one_bend(segment, filter_cfg):
         return None
 
     bend = Bend(position=intersection["position"], orientation=intersection["orientation"])
+    bend_dir = normalize(bend.orientation)
 
-    # Use adjacent edge pairs
-    rect_x_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A'),
-                    ('B', 'A'), ('C', 'B'), ('D', 'C'), ('A', 'D')]
-    rect_z_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A'),
-                    ('B', 'A'), ('C', 'B'), ('D', 'C'), ('A', 'D')]
+    # Only use adjacent edge pairs (single edges, not diagonals)
+    rect_x_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A')]
+    rect_z_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A')]
 
     segment_library = []
 
@@ -182,87 +185,80 @@ def one_bend(segment, filter_cfg):
         CP_xR_id = pair_x[1]
         CP_xR = tab_x.points[CP_xR_id]
 
+        # Calculate edge midpoint for tab_x
+        edge_x_mid = (CP_xL + CP_xR) / 2.0
+
         for pair_z in rect_z_edges:
             CP_zL_id = pair_z[0]
             CP_zL = tab_z.points[CP_zL_id]
             CP_zR_id = pair_z[1]
             CP_zR = tab_z.points[CP_zR_id]
 
-            # ---- Step 1: Calculate Bending Points by projecting corner pairs onto bend line ----
-            BPL = create_bending_point(CP_xL, CP_zL, bend)
-            BPR = create_bending_point(CP_xR, CP_zR, bend)
+            # Calculate edge midpoint for tab_z
+            edge_z_mid = (CP_zL + CP_zR) / 2.0
 
-            # ---- FILTER: Is flange wide enough? ----
+            # ---- Step 1: Calculate BP_mid by projecting midpoint-connecting line onto bend line ----
+            # Midpoint of the line connecting both edge midpoints
+            connecting_mid = (edge_x_mid + edge_z_mid) / 2.0
+            # Project this point onto the bend line
+            BP_mid = project_onto_line(connecting_mid, bend.position, bend_dir)
+
+            # ---- Step 2: Create BPL and BPR from BP_mid ----
+            half_width = min_flange_width / 2.0
+            BPL = BP_mid - bend_dir * half_width
+            BPR = BP_mid + bend_dir * half_width
+
+            # ---- FILTER: Is flange wide enough? (always true with this method, but keep for consistency) ----
             if not min_flange_width_filter(BPL=BPL, BPR=BPR):
                 continue
 
-            # ---- Step 2: Calculate Flange Points perpendicular to bend line ----
-            # FP extends from BP perpendicular to the bend line, toward each plane
-            # This is the same calculation used in two_bends
-            FPxL, FPxR, FPzL, FPzR, angle_too_small = calculate_flange_points_with_angle_check(
-                BPL, BPR, planeA=plane_x, planeB=plane_z
-            )
-            if angle_too_small:
+            # ---- Step 3: Calculate Flange Points perpendicular to bend line ----
+            BP0 = BP_mid  # Use BP_mid as reference for perpendicular direction
+            perpA = perp_toward_plane(plane_x, BP0, bend_dir)
+            perpB = perp_toward_plane(plane_z, BP0, bend_dir)
+
+            # FP points extend from BP perpendicular to bend line, toward each plane
+            FPxL = BPL + perpA * min_flange_length
+            FPxR = BPR + perpA * min_flange_length
+            FPzL = BPL + perpB * min_flange_length
+            FPzR = BPR + perpB * min_flange_length
+
+            # ---- FILTER: Connection lines must not cross the tab rectangle ----
+            if connection_crosses_tab_filter(CP_xL, CP_xR, FPxL, FPxR, rect_x.points):
+                continue
+            if connection_crosses_tab_filter(CP_zL, CP_zR, FPzL, FPzR, rect_z.points):
                 continue
 
-            # ---- Determine L/R correspondence to avoid crossed connections ----
-            # Check if connection lines would cross (using 3D distance check)
-            dist_xL_zL = np.linalg.norm(CP_xL - CP_zL)
-            dist_xL_zR = np.linalg.norm(CP_xL - CP_zR)
-            fp_lines_cross = dist_xL_zR < dist_xL_zL
-
-            # ---- Update Segment.tabs ----
+            # ---- Create new segment ----
             new_segment = segment.copy()
             new_tab_x = new_segment.tabs['tab_x']
             new_tab_z = new_segment.tabs['tab_z']
 
-            # ---- Insert Points in Tab x ----
-            # Points go: Corner (CP) → Flange (FP) → Bend (BP)
-            CPL = {CP_xL_id: CP_xL}
-            bend_points_x = {
-                f"FP{tab_x_id}{tab_z_id}L": FPxL,
-                f"BP{tab_x_id}{tab_z_id}L": BPL,
-                f"BP{tab_x_id}{tab_z_id}R": BPR,
-                f"FP{tab_x_id}{tab_z_id}R": FPxR
-            }
+            # Flange identifier
+            flange_id = f"{tab_x_id}{tab_z_id}"
 
-            new_tab_x.insert_points(L=CPL, add_points=bend_points_x)
+            # ---- Store flange/bend points in tab_x (for export) ----
+            # Naming: FP{CornerID}_{flangeID} to identify which corner the FP connects to
+            # Tab polygon remains unchanged (only A, B, C, D)
+            new_tab_x.points[f"FP{CP_xL_id}_{flange_id}"] = FPxL
+            new_tab_x.points[f"FP{CP_xR_id}_{flange_id}"] = FPxR
+            new_tab_x.points[f"BP_{flange_id}L"] = BPL
+            new_tab_x.points[f"BP_{flange_id}R"] = BPR
 
-            if not are_corners_neighbours(CP_xL_id, CP_xR_id):
-                rm_point_id = next_cp(new_tab_x.rectangle.points, CP_xL_id)
-                rm_point = new_tab_x.rectangle.points[rm_point_id]
-                new_tab_x.remove_point(point={rm_point_id: rm_point})
+            # Store edge info for flange plotting
+            if not hasattr(new_tab_x, 'flange_edges'):
+                new_tab_x.flange_edges = {}
+            new_tab_x.flange_edges[flange_id] = (CP_xL_id, CP_xR_id)
 
-            # ---- Insert Points in Tab z ----
-            CPL = {CP_zL_id: CP_zL}
-            if not fp_lines_cross:
-                bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}L": FPzL,
-                    f"BP{tab_z_id}{tab_x_id}L": BPL,
-                    f"BP{tab_z_id}{tab_x_id}R": BPR,
-                    f"FP{tab_z_id}{tab_x_id}R": FPzR
-                }
-            else:
-                # Lines cross - swap L/R to fix correspondence
-                bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}R": FPzR,
-                    f"BP{tab_z_id}{tab_x_id}R": BPR,
-                    f"BP{tab_z_id}{tab_x_id}L": BPL,
-                    f"FP{tab_z_id}{tab_x_id}L": FPzL
-                }
+            # ---- Store flange/bend points in tab_z (for export) ----
+            new_tab_z.points[f"FP{CP_zL_id}_{flange_id}"] = FPzL
+            new_tab_z.points[f"FP{CP_zR_id}_{flange_id}"] = FPzR
+            new_tab_z.points[f"BP_{flange_id}L"] = BPL
+            new_tab_z.points[f"BP_{flange_id}R"] = BPR
 
-            new_tab_z.insert_points(L=CPL, add_points=bend_points_z)
-
-            if not are_corners_neighbours(CP_zL_id, CP_zR_id):
-                rm_point_id = next_cp(new_tab_z.rectangle.points, CP_zL_id)
-                rm_point = new_tab_z.rectangle.points[rm_point_id]
-                new_tab_z.remove_point(point={rm_point_id: rm_point})
-
-            # ---- FILTER: Do Tabs cover Rects fully? ----
-            if not tab_fully_contains_rectangle(new_tab_x, rect_x):
-                continue
-            if not tab_fully_contains_rectangle(new_tab_z, rect_z):
-                continue
+            if not hasattr(new_tab_z, 'flange_edges'):
+                new_tab_z.flange_edges = {}
+            new_tab_z.flange_edges[flange_id] = (CP_zL_id, CP_zR_id)
 
             # ---- FILTER: Check for duplicates ----
             if is_duplicate_segment(new_segment, segment_library):
@@ -300,11 +296,9 @@ def two_bends(segment, filter_cfg):
     plane_x = calculate_plane(rect_x)
     plane_z = calculate_plane(rect_z)
 
-    # Edge combinations for both rectangles
-    rect_x_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A'),
-                    ('B', 'A'), ('C', 'B'), ('D', 'C'), ('A', 'D')]
-    rect_z_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A'),
-                    ('B', 'A'), ('C', 'B'), ('D', 'C'), ('A', 'D')]
+    # Edge combinations for both rectangles (single edges only, no reversed pairs)
+    rect_x_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A')]
+    rect_z_edges = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A')]
 
     segment_library = []
 
@@ -425,66 +419,67 @@ def two_bends(segment, filter_cfg):
                 # Also swap corner correspondence for z-side
                 CPzL, CPzR = CPzR, CPzL
 
+            # ---- FILTER: Connection lines must not cross the tab rectangle ----
+            if connection_crosses_tab_filter(CPxL, CPxR, FPxyL, FPxyR, rect_x.points):
+                continue
+            corner_zL = tab_z.points[CPzR_id if z_swapped else CPzL_id]
+            corner_zR = tab_z.points[CPzL_id if z_swapped else CPzR_id]
+            if connection_crosses_tab_filter(corner_zL, corner_zR, FPzyL, FPzyR, rect_z.points):
+                continue
+
             # Create new segment
             new_segment = segment.copy()
             new_tab_x = new_segment.tabs['tab_x']
             new_tab_z = new_segment.tabs['tab_z']
 
             tab_y_id = f"{tab_x_id}{tab_z_id}"
-            new_tab_y = Tab(tab_id=tab_y_id, points={"A": BPxL, "B": BPxR, "C": BPzL})
 
-            # Insert points in Tab x (with flange)
-            # Use corner points for FP to ensure proper connection to original tab
-            bend_points_x = {
-                f"FP{tab_x_id}_{tab_y_id}L": CPxL,
-                f"BP{tab_x_id}_{tab_y_id}L": BPxL,
-                f"BP{tab_x_id}_{tab_y_id}R": BPxR,
-                f"FP{tab_x_id}_{tab_y_id}R": CPxR
-            }
-            new_tab_x.insert_points(L={CPxL_id: CPxL}, add_points=bend_points_x)
+            # Flange identifiers
+            flange_xy_id = f"{tab_x_id}_{tab_y_id}"
+            flange_yz_id = f"{tab_z_id}_{tab_y_id}"
 
-            # Insert points in Tab y - IMPORTANT: Order must trace proper perimeter
-            # Check if diagonals would cross in 3D (any projection: XY, XZ, YZ)
-            # Default ordering: FPyxL -> ... -> FPyxR -> FPyzR -> ... -> FPyzL -> back to FPyxL
-            # The diagonals are (FPyxR to FPyzR) and (FPyzL to FPyxL)
-            # If they cross, swap z-side L/R to prevent self-intersection
+            # ---- Store flange/bend points in tab_x (for export) ----
+            # FP naming: FP{CornerID}_{flangeID}
+            # Get correct corner IDs after potential swap
+            corner_xL_id = CPxL_id
+            corner_xR_id = CPxR_id
+            new_tab_x.points[f"FP{corner_xL_id}_{flange_xy_id}"] = FPxyL
+            new_tab_x.points[f"FP{corner_xR_id}_{flange_xy_id}"] = FPxyR
+            new_tab_x.points[f"BP_{flange_xy_id}L"] = BPxL
+            new_tab_x.points[f"BP_{flange_xy_id}R"] = BPxR
+
+            if not hasattr(new_tab_x, 'flange_edges'):
+                new_tab_x.flange_edges = {}
+            new_tab_x.flange_edges[flange_xy_id] = (corner_xL_id, corner_xR_id)
+
+            # ---- Store flange/bend points in tab_z (for export) ----
+            # Get correct corner IDs (may be swapped)
+            corner_zL_id = CPzR_id if z_swapped else CPzL_id
+            corner_zR_id = CPzL_id if z_swapped else CPzR_id
+            new_tab_z.points[f"FP{corner_zL_id}_{flange_yz_id}"] = FPzyL
+            new_tab_z.points[f"FP{corner_zR_id}_{flange_yz_id}"] = FPzyR
+            new_tab_z.points[f"BP_{flange_yz_id}L"] = BPzL
+            new_tab_z.points[f"BP_{flange_yz_id}R"] = BPzR
+
+            if not hasattr(new_tab_z, 'flange_edges'):
+                new_tab_z.flange_edges = {}
+            new_tab_z.flange_edges[flange_yz_id] = (corner_zL_id, corner_zR_id)
+
+            # ---- Create intermediate tab_y ----
+            # Tab Y is the connecting surface between the two flanges
+            # Check if diagonals would cross in 3D
             if diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL):
-                # Diagonals cross - swap z-side ordering (L↔R)
-                bend_points_y = {
-                    f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
-                    f"BP{tab_y_id}_{tab_x_id}L": BPxL,
-                    f"BP{tab_y_id}_{tab_x_id}R": BPxR,
-                    f"FP{tab_y_id}_{tab_x_id}R": FPyxR,
-                    f"FP{tab_y_id}_{tab_z_id}L": FPyzL,      # swapped
-                    f"BP{tab_y_id}_{tab_z_id}L": BPzL,       # swapped
-                    f"BP{tab_y_id}_{tab_z_id}R": BPzR,       # swapped
-                    f"FP{tab_y_id}_{tab_z_id}R": FPyzR       # swapped
+                # Diagonals cross - swap z-side ordering
+                tab_y_points = {
+                    "FPyxL": FPyxL, "BPxL": BPxL, "BPxR": BPxR, "FPyxR": FPyxR,
+                    "FPyzL": FPyzL, "BPzL": BPzL, "BPzR": BPzR, "FPyzR": FPyzR
                 }
             else:
-                bend_points_y = {
-                    f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
-                    f"BP{tab_y_id}_{tab_x_id}L": BPxL,
-                    f"BP{tab_y_id}_{tab_x_id}R": BPxR,
-                    f"FP{tab_y_id}_{tab_x_id}R": FPyxR,
-                    f"FP{tab_y_id}_{tab_z_id}R": FPyzR,
-                    f"BP{tab_y_id}_{tab_z_id}R": BPzR,
-                    f"BP{tab_y_id}_{tab_z_id}L": BPzL,
-                    f"FP{tab_y_id}_{tab_z_id}L": FPyzL
+                tab_y_points = {
+                    "FPyxL": FPyxL, "BPxL": BPxL, "BPxR": BPxR, "FPyxR": FPyxR,
+                    "FPyzR": FPyzR, "BPzR": BPzR, "BPzL": BPzL, "FPyzL": FPyzL
                 }
-            new_tab_y.points = bend_points_y
-
-            # Insert points in Tab z (with flange)
-            # Use corner points for FP (CPzL/CPzR already swapped if z_swapped)
-            # Need to use the original corner ID for insert position
-            insert_corner_id = CPzR_id if z_swapped else CPzL_id
-            insert_corner_val = tab_z.points[insert_corner_id]
-            bend_points_z = {
-                f"FP{tab_z_id}_{tab_y_id}L": CPzL,
-                f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                f"FP{tab_z_id}_{tab_y_id}R": CPzR
-            }
-            new_tab_z.insert_points(L={insert_corner_id: insert_corner_val}, add_points=bend_points_z)
+            new_tab_y = Tab(tab_id=tab_y_id, points=tab_y_points)
 
             # ---- FILTER: Check for duplicates ----
             new_segment.tabs = {'tab_x': new_tab_x, 'tab_y': new_tab_y, 'tab_z': new_tab_z}
@@ -617,77 +612,57 @@ def two_bends(segment, filter_cfg):
             if angle_check_yz:
                 continue
 
-            # Insert points in Tab x (with flange)
-            # Use corner points for FP to ensure proper connection
-            bend_points_x = {
-                f"FP{tab_x_id}_{tab_y_id}L": CPxL,
-                f"BP{tab_x_id}_{tab_y_id}L": BPxL,
-                f"BP{tab_x_id}_{tab_y_id}R": BPxR,
-                f"FP{tab_x_id}_{tab_y_id}R": CPxR
-            }
-            new_tab_x.insert_points(L={CPxL_id: CPxL}, add_points=bend_points_x)
+            # ---- FILTER: Connection lines must not cross the tab rectangle ----
+            if connection_crosses_tab_filter(CPxL, CPxR, FPxyL, FPxyR, rect_x.points):
+                continue
+            if connection_crosses_tab_filter(CPzL, CPzR, FPzyL, FPzyR, rect_z.points):
+                continue
 
-            # Insert points in Tab y - IMPORTANT: Order must trace proper perimeter
-            # Check if diagonals would cross in 3D (any projection: XY, XZ, YZ)
-            # Default ordering: FPyxL -> ... -> FPyxR -> FPyzR -> ... -> FPyzL -> back to FPyxL
-            # The diagonals are (FPyxR to FPyzR) and (FPyzL to FPyxL)
-            # If they cross, swap z-side L/R to prevent self-intersection
-            if diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL):
-                # Diagonals cross - swap z-side ordering (L↔R)
-                bend_points_y = {
-                    f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
-                    f"BP{tab_y_id}_{tab_x_id}L": BPxL,
-                    f"BP{tab_y_id}_{tab_x_id}R": BPxR,
-                    f"FP{tab_y_id}_{tab_x_id}R": FPyxR,
-                    f"FP{tab_y_id}_{tab_z_id}L": FPyzL,      # swapped
-                    f"BP{tab_y_id}_{tab_z_id}L": BPzL,       # swapped
-                    f"BP{tab_y_id}_{tab_z_id}R": BPzR,       # swapped
-                    f"FP{tab_y_id}_{tab_z_id}R": FPyzR       # swapped
-                }
-            else:
-                bend_points_y = {
-                    f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
-                    f"BP{tab_y_id}_{tab_x_id}L": BPxL,
-                    f"BP{tab_y_id}_{tab_x_id}R": BPxR,
-                    f"FP{tab_y_id}_{tab_x_id}R": FPyxR,
-                    f"FP{tab_y_id}_{tab_z_id}R": FPyzR,
-                    f"BP{tab_y_id}_{tab_z_id}R": BPzR,
-                    f"BP{tab_y_id}_{tab_z_id}L": BPzL,
-                    f"FP{tab_y_id}_{tab_z_id}L": FPyzL
-                }
-            new_tab_y.points = bend_points_y
+            # Flange identifiers
+            flange_xy_id = f"{tab_x_id}_{tab_y_id}"
+            flange_yz_id = f"{tab_z_id}_{tab_y_id}"
 
-            # Insert points in Tab z - use corner points for FP
+            # ---- Store flange/bend points in tab_x (for export) ----
+            new_tab_x.points[f"FP{CPxL_id}_{flange_xy_id}"] = FPxyL
+            new_tab_x.points[f"FP{CPxR_id}_{flange_xy_id}"] = FPxyR
+            new_tab_x.points[f"BP_{flange_xy_id}L"] = BPxL
+            new_tab_x.points[f"BP_{flange_xy_id}R"] = BPxR
+
+            if not hasattr(new_tab_x, 'flange_edges'):
+                new_tab_x.flange_edges = {}
+            new_tab_x.flange_edges[flange_xy_id] = (CPxL_id, CPxR_id)
+
+            # ---- Store flange/bend points in tab_z (for export) ----
+            # Determine corner correspondence based on crossover check
             z_lines_cross = lines_cross(FPyzL, CPzL, CPzR, FPyxR)
             if z_lines_cross:
-                # Lines cross - swap L/R, so also swap corner correspondence
-                bend_points_z = {
-                    f"FP{tab_z_id}_{tab_y_id}R": CPzR,
-                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                    f"FP{tab_z_id}_{tab_y_id}L": CPzL
+                corner_zL_id = CPzR_id
+                corner_zR_id = CPzL_id
+            else:
+                corner_zL_id = CPzL_id
+                corner_zR_id = CPzR_id
+
+            new_tab_z.points[f"FP{corner_zL_id}_{flange_yz_id}"] = FPzyL
+            new_tab_z.points[f"FP{corner_zR_id}_{flange_yz_id}"] = FPzyR
+            new_tab_z.points[f"BP_{flange_yz_id}L"] = BPzL
+            new_tab_z.points[f"BP_{flange_yz_id}R"] = BPzR
+
+            if not hasattr(new_tab_z, 'flange_edges'):
+                new_tab_z.flange_edges = {}
+            new_tab_z.flange_edges[flange_yz_id] = (corner_zL_id, corner_zR_id)
+
+            # ---- Create intermediate tab_y ----
+            if diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL):
+                tab_y_points = {
+                    "FPyxL": FPyxL, "BPxL": BPxL, "BPxR": BPxR, "FPyxR": FPyxR,
+                    "FPyzL": FPyzL, "BPzL": BPzL, "BPzR": BPzR, "FPyzR": FPyzR
                 }
             else:
-                bend_points_z = {
-                    f"FP{tab_z_id}_{tab_y_id}L": CPzL,
-                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                    f"FP{tab_z_id}_{tab_y_id}R": CPzR
+                tab_y_points = {
+                    "FPyxL": FPyxL, "BPxL": BPxL, "BPxR": BPxR, "FPyxR": FPyxR,
+                    "FPyzR": FPyzR, "BPzR": BPzR, "BPzL": BPzL, "FPyzL": FPyzL
                 }
-
-            if CPzM_id not in new_tab_z.points.keys():
-                new_tab_z.insert_points(L={CPzL_id: CPzL}, add_points=bend_points_z)
-            elif (CPzM == list(bend_points_z.values())[0]).all():
-                new_tab_z.insert_points(L={CPzM_id: CPzM}, add_points=bend_points_z)
-            else:
-                new_tab_z.insert_points(L={CPzL_id: CPzL}, add_points=bend_points_z)
-
-            # ---- FILTER: Do Tabs cover Rects fully? ----
-            if filter_cfg.get('Tabs cover Rects', False):
-                if not tab_fully_contains_rectangle(new_tab_x, rect_x):
-                    continue
-                if not tab_fully_contains_rectangle(new_tab_z, rect_z):
-                    continue
+            new_tab_y = Tab(tab_id=tab_y_id, points=tab_y_points)
 
             # ---- FILTER: Thin segments ----
             if filter_cfg.get('Too thin segments', False):

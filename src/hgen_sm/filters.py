@@ -551,3 +551,75 @@ def _bounds_collide_with_gap(pts1, pts2, gap):
 def thin_segment_filter(segment):
     """NOT IMPLEMENTED YET: Filter out all the segments, that have sections that are too thin."""
     return False
+
+
+def connection_crosses_tab_filter(corner_L, corner_R, FP_L, FP_R, rect_points):
+    """
+    Check if the connection lines from corners to flange points cross the tab rectangle.
+
+    Args:
+        corner_L: Left corner point of the selected edge
+        corner_R: Right corner point of the selected edge
+        FP_L: Left flange point
+        FP_R: Right flange point
+        rect_points: Dictionary of rectangle corner points {'A': [...], 'B': [...], ...}
+
+    Returns:
+        True if connection lines cross the tab (invalid), False otherwise (valid)
+    """
+    # Get rectangle corners in order
+    corners = ['A', 'B', 'C', 'D']
+    rect_pts = [np.array(rect_points[c]) for c in corners]
+
+    # Rectangle edges (as pairs of points)
+    edges = [
+        (rect_pts[0], rect_pts[1]),  # A-B
+        (rect_pts[1], rect_pts[2]),  # B-C
+        (rect_pts[2], rect_pts[3]),  # C-D
+        (rect_pts[3], rect_pts[0]),  # D-A
+    ]
+
+    corner_L = np.array(corner_L)
+    corner_R = np.array(corner_R)
+    FP_L = np.array(FP_L)
+    FP_R = np.array(FP_R)
+
+    def segment_crosses_edge(seg_start, seg_end, edge_start, edge_end, tol=1e-6):
+        """Check if segment crosses an edge (excluding shared endpoints)."""
+        # Skip if segment shares an endpoint with the edge
+        if (np.linalg.norm(seg_start - edge_start) < tol or
+            np.linalg.norm(seg_start - edge_end) < tol or
+            np.linalg.norm(seg_end - edge_start) < tol or
+            np.linalg.norm(seg_end - edge_end) < tol):
+            return False
+
+        # Use 2D projection for crossing check (XY, XZ, YZ)
+        def segments_cross_2d(p1, p2, p3, p4):
+            """Check if segments p1-p2 and p3-p4 cross in 2D."""
+            def ccw(A, B, C):
+                return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+
+            # Check proper intersection (not touching at endpoints)
+            def intersect(A, B, C, D):
+                return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+
+            return intersect(p1, p2, p3, p4)
+
+        # Check in all 2D projections
+        for proj in [(0, 1), (0, 2), (1, 2)]:  # XY, XZ, YZ
+            if segments_cross_2d(
+                seg_start[list(proj)], seg_end[list(proj)],
+                edge_start[list(proj)], edge_end[list(proj)]
+            ):
+                return True
+
+        return False
+
+    # Check if connection line from corner_L to FP_L crosses any edge
+    for edge_start, edge_end in edges:
+        if segment_crosses_edge(corner_L, FP_L, edge_start, edge_end):
+            return True
+        if segment_crosses_edge(corner_R, FP_R, edge_start, edge_end):
+            return True
+
+    return False

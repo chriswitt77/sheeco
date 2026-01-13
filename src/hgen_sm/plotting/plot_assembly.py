@@ -73,13 +73,28 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
 
     if plot_cfg.get('Tabs', False) and getattr(part, 'tabs', None):
         for tab_id, tab_obj in part.tabs.items():
-            if tab_obj.points:
+            # For tabs with flange_edges (new format), only plot original rectangle corners
+            if hasattr(tab_obj, 'flange_edges') and tab_obj.flange_edges:
+                # Only plot A, B, C, D corners as the tab
+                if all(k in tab_obj.points for k in ['A', 'B', 'C', 'D']):
+                    pts = np.array([tab_obj.points['A'], tab_obj.points['B'],
+                                    tab_obj.points['C'], tab_obj.points['D']])
+                    faces = np.hstack([[4, 0, 1, 2, 3]])
+                    mesh = pv.PolyData(pts, faces)
+                    plotter.add_mesh(
+                        mesh,
+                        color=color_tabs,
+                        opacity=0.8,
+                        show_edges=True,
+                        style='surface',
+                        label=f"Tab {tab_id}"
+                    )
+            elif tab_obj.points:
+                # Legacy or intermediate tabs (tab_y) - plot all points
                 points_list = list(tab_obj.points.values())
                 points_array = np.array(points_list)
                 num_points = points_array.shape[0]
 
-                # For tabs with more than 4 points (intermediate tabs), always triangulate
-                # because they may be non-convex or non-planar
                 should_triangulate = plot_cfg.get('Triangulate Tabs', False) or num_points > 4
 
                 faces = np.hstack([[num_points], np.arange(num_points)])
@@ -91,12 +106,12 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                     mesh,
                     color=color_tabs,
                     opacity=0.8,
-                    show_edges=False,
+                    show_edges=True,
                     style='surface',
                     label=f"Tab {tab_id}"
                 )
 
-                if plot_cfg.get('Labels', False): # Add labels for each point
+                if plot_cfg.get('Labels', False):
                     point_ids = list(tab_obj.points.keys())
                     for i, point_id in enumerate(point_ids):
                         point_coord = points_array[i]
@@ -107,49 +122,34 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                             point_size=standard_point_size,
                             show_points=False
                         )
-    
+
     if plot_cfg.get('Flanges', False) and getattr(part, 'tabs', None):
         first_flange_plotted = False
+        first_bend_plotted = False
         for tab_id, tab_obj in part.tabs.items():
-            # Group points by their full identifier (between BP/FP and L/R)
-            flanges = {}
-            for p_id, coords in tab_obj.points.items():
-                if p_id.startswith("BP") or p_id.startswith("FP"):
-                    # Extract full index (e.g., 'BP0_0_0_01L' -> '0_0_0_01', 'FP01R' -> '01')
-                    # Remove prefix (BP/FP) and suffix (L/R)
-                    idx = p_id[2:-1]  # Strip first 2 chars (BP/FP) and last char (L/R)
-                    if idx not in flanges:
-                        flanges[idx] = {}
-                    flanges[idx][p_id] = coords
-
-            # Plot each detected flange
-            for idx, f_points in flanges.items():
-                # A valid flange needs exactly 4 points: 2 BP and 2 FP
-                if len(f_points) == 4:
-                    # Sort points to ensure a clean quadrilateral (BPL -> BPR -> FPR -> FPL)
-                    # This prevents 'bow-tie' artifacts in the mesh
-                    ordered_keys = [f"BP{idx}L", f"BP{idx}R", f"FP{idx}R", f"FP{idx}L"]
-
+            # Check if tab has flange_edges info (new format)
+            if hasattr(tab_obj, 'flange_edges') and tab_obj.flange_edges:
+                for flange_id, (corner_L_id, corner_R_id) in tab_obj.flange_edges.items():
                     try:
-                        # Try ordered keys first for proper quadrilateral winding
-                        pts = np.array([f_points[k] for k in ordered_keys])
-                    except KeyError:
-                        # Fallback: sort by key type to get proper winding
-                        bp_keys = sorted([k for k in f_points if k.startswith("BP")])
-                        fp_keys = sorted([k for k in f_points if k.startswith("FP")])
-                        if len(bp_keys) == 2 and len(fp_keys) == 2:
-                            # BPL -> BPR -> FPR -> FPL ordering
-                            ordered_keys = [bp_keys[0], bp_keys[1], fp_keys[1], fp_keys[0]]
-                            pts = np.array([f_points[k] for k in ordered_keys])
-                        else:
-                            pts = np.array([f_points[k] for k in f_points])
+                        # Get corner points
+                        corner_L = tab_obj.points[corner_L_id]
+                        corner_R = tab_obj.points[corner_R_id]
+                        # Get flange points (named FP{CornerID}_{flangeID})
+                        fp_L = tab_obj.points.get(f"FP{corner_L_id}_{flange_id}")
+                        fp_R = tab_obj.points.get(f"FP{corner_R_id}_{flange_id}")
+                        # Get bend points
+                        bp_L = tab_obj.points.get(f"BP_{flange_id}L")
+                        bp_R = tab_obj.points.get(f"BP_{flange_id}R")
 
-                    try:
+                        if fp_L is None or fp_R is None:
+                            continue
+
+                        # 1. Flange connecting area: CornerL -> CornerR -> FP_R -> FP_L
+                        flange_pts = np.array([corner_L, corner_R, fp_R, fp_L])
                         faces = np.hstack([[4, 0, 1, 2, 3]])
-                        flange_mesh = pv.PolyData(pts, faces)
+                        flange_mesh = pv.PolyData(flange_pts, faces)
 
-                        # Only add label for first flange to avoid legend clutter
-                        label = f"Flange {idx}" if not first_flange_plotted else None
+                        label = "Flange" if not first_flange_plotted else None
                         first_flange_plotted = True
 
                         plotter.add_mesh(
@@ -160,8 +160,65 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
                             line_width=2,
                             label=label
                         )
+
+                        # 2. Bend area: FP_L -> FP_R -> BP_R -> BP_L
+                        if bp_L is not None and bp_R is not None:
+                            bend_pts = np.array([fp_L, fp_R, bp_R, bp_L])
+                            bend_mesh = pv.PolyData(bend_pts, faces)
+
+                            bend_label = "Bend" if not first_bend_plotted else None
+                            first_bend_plotted = True
+
+                            plotter.add_mesh(
+                                bend_mesh,
+                                color=color_bend,
+                                opacity=0.9,
+                                show_edges=True,
+                                line_width=2,
+                                label=bend_label
+                            )
+
                     except Exception:
-                        continue  # Skip if there's any issue with the mesh
+                        continue
+            else:
+                # Legacy format: Group points by their full identifier
+                flanges = {}
+                for p_id, coords in tab_obj.points.items():
+                    if p_id.startswith("BP") or p_id.startswith("FP"):
+                        idx = p_id[2:-1]
+                        if idx not in flanges:
+                            flanges[idx] = {}
+                        flanges[idx][p_id] = coords
+
+                for idx, f_points in flanges.items():
+                    if len(f_points) == 4:
+                        ordered_keys = [f"BP{idx}L", f"BP{idx}R", f"FP{idx}R", f"FP{idx}L"]
+                        try:
+                            pts = np.array([f_points[k] for k in ordered_keys])
+                        except KeyError:
+                            bp_keys = sorted([k for k in f_points if k.startswith("BP")])
+                            fp_keys = sorted([k for k in f_points if k.startswith("FP")])
+                            if len(bp_keys) == 2 and len(fp_keys) == 2:
+                                ordered_keys = [bp_keys[0], bp_keys[1], fp_keys[1], fp_keys[0]]
+                                pts = np.array([f_points[k] for k in ordered_keys])
+                            else:
+                                pts = np.array([f_points[k] for k in f_points])
+
+                        try:
+                            faces = np.hstack([[4, 0, 1, 2, 3]])
+                            flange_mesh = pv.PolyData(pts, faces)
+                            label = f"Flange {idx}" if not first_flange_plotted else None
+                            first_flange_plotted = True
+                            plotter.add_mesh(
+                                flange_mesh,
+                                color=color_flange,
+                                opacity=0.9,
+                                show_edges=True,
+                                line_width=2,
+                                label=label
+                            )
+                        except Exception:
+                            continue
 
     # Plot mounts as red circles on the tab plane
     if plot_cfg.get('Mounts', True) and getattr(part, 'tabs', None):

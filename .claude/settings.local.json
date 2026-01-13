@@ -21,7 +21,8 @@
       "Bash(powershell.exe:*)",
       "Bash(cmd.exe /c \"py tests/test_segment_collision.py\")",
       "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco && py tests\\\\test_segment_collision.py\")",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(\"C:\\\\Users\\\\Wittig\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -m src.hgen_sm)"
     ]
   }
 }
