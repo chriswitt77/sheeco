@@ -21,9 +21,27 @@ def create_part_json(part, timestamp = None):
     }
 
     for tid, tab in part.tabs.items():
-        export_data["tabs"][tid] = {
+        # Export tab points
+        tab_data = {
             "points": {label: pt.tolist() for label, pt in tab.points.items()}
         }
+
+        # Export mounts/holes if present
+        if hasattr(tab, 'mounts') and tab.mounts:
+            tab_data["mounts"] = []
+            for mount in tab.mounts:
+                mount_data = {
+                    "u": float(mount.u),
+                    "v": float(mount.v),
+                    "size": float(mount.size),
+                    "type": mount.type
+                }
+                # Include global coordinates if available
+                if mount.global_coords is not None:
+                    mount_data["global_coords"] = mount.global_coords.tolist()
+                tab_data["mounts"].append(mount_data)
+
+        export_data["tabs"][tid] = tab_data
 
     return export_data
 
@@ -75,42 +93,58 @@ def export_to_onshape(part, output_dir="exports"):
         if len(pts) < 3: continue
 
         # --- Plane Detection & Basis Calculation ---
-        p0 = pts[0]
-        v1 = sub(pts[1], p0)
-        
-        # FIX: Find a point that is NOT collinear with p0 and p1 to determine normal
-        z_axis = [0, 0, 1]
-        valid_plane_found = False
-        
-        for i in range(2, len(pts)):
-            v_temp = sub(pts[i], p0)
-            cp = cross(v1, v_temp)
-            # Check if cross product magnitude is sufficient (not collinear)
-            if mag_sq(cp) > 1e-8: 
-                z_axis = norm(cp)
-                valid_plane_found = True
-                break
-        
-        if not valid_plane_found:
-            print(f"Skipping Tab {tab_id}: Points are collinear or degenerate.")
+        # For tabs with A, B, C corners, use them for coordinate system
+        # For intermediate tabs (from two-bend), use first three non-collinear points
+        points_dict = tab_data["points"]
+
+        # Try to use A, B, C if available (original rectangles)
+        if 'A' in points_dict and 'B' in points_dict and 'C' in points_dict:
+            A = points_dict['A']
+            B = points_dict['B']
+            C = points_dict['C']
+            origin = A
+            v1 = sub(B, A)
+            v2 = sub(C, A)
+        else:
+            # Intermediate tab - use first three points to establish coordinate system
+            origin = pts[0]
+            v1 = sub(pts[1], pts[0])
+            # Find a non-collinear third point
+            v2 = None
+            for i in range(2, len(pts)):
+                v_temp = sub(pts[i], pts[0])
+                cp = cross(v1, v_temp)
+                if mag_sq(cp) > 1e-8:
+                    v2 = v_temp
+                    break
+
+            if v2 is None:
+                print(f"Skipping Tab {tab_id}: All points are collinear.")
+                continue
+
+        # Calculate plane normal and coordinate axes
+        z_axis = cross(v1, v2)
+        if mag_sq(z_axis) < 1e-8:
+            print(f"Skipping Tab {tab_id}: Points are collinear.")
             continue
 
-        x_axis = norm(v1)            
-        y_axis = cross(z_axis, x_axis)
+        z_axis = norm(z_axis)
+        x_axis = norm(v1)  # x-axis along first edge direction
+        y_axis = cross(z_axis, x_axis)  # y-axis perpendicular in plane
 
-        # Project 3D points to 2D local plane
+        # Project 3D points to 2D local plane (relative to origin)
         points_2d = []
         for p in pts:
-            vec = sub(p, p0)
+            vec = sub(p, origin)  # Use calculated origin
             u, v = dot(vec, x_axis), dot(vec, y_axis)
             points_2d.append(f"vector({u}, {v}) * millimeter")
-        
+
         # Ensure the loop is closed for 2D sketch
         if points_2d[0] != points_2d[-1]:
              points_2d.append(points_2d[0])
 
-        # Format Vectors for FS
-        fs_org = f"vector({p0[0]}, {p0[1]}, {p0[2]}) * millimeter"
+        # Format Vectors for FS (use calculated origin as sketch plane origin)
+        fs_org = f"vector({origin[0]}, {origin[1]}, {origin[2]}) * millimeter"
         fs_norm = f"vector({z_axis[0]}, {z_axis[1]}, {z_axis[2]})"
         fs_x = f"vector({x_axis[0]}, {x_axis[1]}, {x_axis[2]})"
 
@@ -119,8 +153,23 @@ def export_to_onshape(part, output_dir="exports"):
         fs.append(f'        // --- Tab {tab_id} ---')
         fs.append(f'        var sketch{tab_id} = newSketchOnPlane(context, id + "sketch{tab_id}", {{ "sketchPlane" : plane({fs_org}, {fs_norm}, {fs_x}) }});')
         fs.append(f'        skPolyline(sketch{tab_id}, "poly{tab_id}", {{ "points" : [{", ".join(points_2d)}] }});')
+
+        # --- Add holes/mounts to sketch ---
+        if "mounts" in tab_data:
+            for mount_idx, mount in enumerate(tab_data["mounts"]):
+                # Mount coordinates are already in the local (u, v) system
+                # u is along x_axis, v is along y_axis
+                mount_u = mount["u"]
+                mount_v = mount["v"]
+                mount_radius = mount["size"]
+
+                fs.append(f'        skCircle(sketch{tab_id}, "hole{tab_id}_{mount_idx}", {{')
+                fs.append(f'            "center" : vector({mount_u}, {mount_v}) * millimeter,')
+                fs.append(f'            "radius" : {mount_radius} * millimeter')
+                fs.append(f'        }});')
+
         fs.append(f'        skSolve(sketch{tab_id});')
-        
+
         fs.append(f'        opExtrude(context, id + "extrude{tab_id}", {{')
         fs.append(f'            "entities" : qSketchRegion(id + "sketch{tab_id}"),')
         fs.append(f'            "direction" : {fs_norm},')

@@ -218,12 +218,13 @@ def one_bend(segment, filter_cfg):
 
             # ---- Insert Points in Tab x ----
             # Points go: Corner (CP) → Flange (FP) → Bend (BP)
+            # CRITICAL: FP must use original corner coordinates, not calculated flange points
             CPL = {CP_xL_id: CP_xL}
             bend_points_x = {
-                f"FP{tab_x_id}{tab_z_id}L": FPxL,
+                f"FP{tab_x_id}{tab_z_id}L": CP_xL,  # Use corner coordinate
                 f"BP{tab_x_id}{tab_z_id}L": BPL,
                 f"BP{tab_x_id}{tab_z_id}R": BPR,
-                f"FP{tab_x_id}{tab_z_id}R": FPxR
+                f"FP{tab_x_id}{tab_z_id}R": CP_xR   # Use corner coordinate
             }
 
             new_tab_x.insert_points(L=CPL, add_points=bend_points_x)
@@ -234,21 +235,22 @@ def one_bend(segment, filter_cfg):
                 new_tab_x.remove_point(point={rm_point_id: rm_point})
 
             # ---- Insert Points in Tab z ----
+            # CRITICAL: FP must use original corner coordinates, not calculated flange points
             CPL = {CP_zL_id: CP_zL}
             if not fp_lines_cross:
                 bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}L": FPzL,
+                    f"FP{tab_z_id}{tab_x_id}L": CP_zL,  # Use corner coordinate
                     f"BP{tab_z_id}{tab_x_id}L": BPL,
                     f"BP{tab_z_id}{tab_x_id}R": BPR,
-                    f"FP{tab_z_id}{tab_x_id}R": FPzR
+                    f"FP{tab_z_id}{tab_x_id}R": CP_zR   # Use corner coordinate
                 }
             else:
                 # Lines cross - swap L/R to fix correspondence
                 bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}R": FPzR,
+                    f"FP{tab_z_id}{tab_x_id}R": CP_zR,  # Use corner coordinate
                     f"BP{tab_z_id}{tab_x_id}R": BPR,
                     f"BP{tab_z_id}{tab_x_id}L": BPL,
-                    f"FP{tab_z_id}{tab_x_id}L": FPzL
+                    f"FP{tab_z_id}{tab_x_id}L": CP_zL   # Use corner coordinate
                 }
 
             new_tab_z.insert_points(L=CPL, add_points=bend_points_z)

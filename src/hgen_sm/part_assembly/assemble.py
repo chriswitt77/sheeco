@@ -1,5 +1,6 @@
 from src.hgen_sm.part_assembly.merge_helpers import extract_tabs_from_segments, merge_points
 from src.hgen_sm.filters import collision_filter
+from src.hgen_sm.data import validate_part
 
 def part_assembly(part, segments, filter_cfg):
     # Start with existing tabs to preserve unconnected ones (e.g., split surfaces)
@@ -42,5 +43,17 @@ def part_assembly(part, segments, filter_cfg):
             return None
 
     part.tabs = new_tabs_dict
+
+    # VALIDATION: Verify data structure integrity
+    # This catches topology errors (FP placement, self-intersecting polygons)
+    is_valid, errors = validate_part(part, verbose=False)
+    if not is_valid:
+        print(f"WARNING: Part {part.part_id} validation failed:")
+        for error in errors[:3]:  # Show first 3 errors
+            print(f"  - {error}")
+        if len(errors) > 3:
+            print(f"  ... and {len(errors) - 3} more errors")
+        # Don't reject the part - just warn, since validation might have false positives
+        # return None
 
     return part

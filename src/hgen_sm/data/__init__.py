@@ -4,6 +4,12 @@ from .part import Part
 from .rectangle import Rectangle
 from .segment import Segment
 from .tab import Tab
+from .validation import (
+    validate_flange_points,
+    validate_perimeter_ordering,
+    validate_part,
+    print_validation_report
+)
 
 # Define what is available when the package is imported
 __all__ = [
@@ -13,5 +19,9 @@ __all__ = [
     'Part',
     'Rectangle',
     'Segment',
-    'Tab'
+    'Tab',
+    'validate_flange_points',
+    'validate_perimeter_ordering',
+    'validate_part',
+    'print_validation_report'
 ]
