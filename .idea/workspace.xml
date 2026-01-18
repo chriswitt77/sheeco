@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="fixxed export (holes still bugged)">
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="Split up two bend alternative approach, parallel edges still buggy">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
     </list>
@@ -153,7 +152,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768398821293</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Split up two bend alternative approach, parallel edges still buggy">
+      <option name="closed" value="true" />
+      <created>1768752840290</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1768752840290</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -164,6 +171,7 @@
     <MESSAGE value="fixed plotting" />
     <MESSAGE value="optional surface separation" />
     <MESSAGE value="fixxed export (holes still bugged)" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixxed export (holes still bugged)" />
+    <MESSAGE value="Split up two bend alternative approach, parallel edges still buggy" />
+    <option name="LAST_COMMIT_MESSAGE" value="Split up two bend alternative approach, parallel edges still buggy" />
   </component>
 </project>

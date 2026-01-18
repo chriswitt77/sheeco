@@ -1011,20 +1011,22 @@ def two_bends(segment, filter_cfg):
             edge_z_vec = CPzR - CPzL
             edge_z_mid = (CPzL + CPzR) / 2
             out_dir_z = np.cross(edge_z_vec, plane_z.orientation)
-            out_dir_z = normalize(out_dir_z)
+            out_dir_z_norm = np.linalg.norm(out_dir_z)
+            if out_dir_z_norm < 1e-9:
+                # Edge is parallel to plane normal - skip
+                continue
+            out_dir_z = out_dir_z / out_dir_z_norm
             if np.dot(out_dir_z, edge_z_mid - rect_z_center) < 0:
                 out_dir_z = -out_dir_z
 
-            # Check if this is parallel case (bend axis parallel to z-edge)
-            ortho_dir = np.cross(bend_xy.orientation, plane_z.orientation)
-            ortho_norm = np.linalg.norm(ortho_dir)
-            if ortho_norm < 1e-9:
+            # Verify bend_xy orientation is not parallel to plane_z (sanity check)
+            ortho_check = np.cross(bend_xy.orientation, plane_z.orientation)
+            if np.linalg.norm(ortho_check) < 1e-9:
                 # Bend is parallel to plane_z - skip (not the parallel case we want)
                 continue
-            ortho_dir /= ortho_norm
 
-            # Create second bend parallel to first bend
-            bend_yz_pos = edge_z_mid + ortho_dir * min_flange_length
+            # Create second bend parallel to first bend, offset by outward direction
+            bend_yz_pos = edge_z_mid + out_dir_z * min_flange_length
             bend_yz_ori = bend_xy.orientation / np.linalg.norm(bend_xy.orientation)
             bend_yz = Bend(position=bend_yz_pos, orientation=bend_yz_ori)
 
