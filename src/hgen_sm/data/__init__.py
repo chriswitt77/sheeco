@@ -5,6 +5,7 @@ from .rectangle import Rectangle
 from .segment import Segment
 from .tab import Tab
 from .validation import (
+    validate_naming_convention,
     validate_flange_points,
     validate_perimeter_ordering,
     validate_part,
@@ -20,6 +21,7 @@ __all__ = [
     'Rectangle',
     'Segment',
     'Tab',
+    'validate_naming_convention',
     'validate_flange_points',
     'validate_perimeter_ordering',
     'validate_part',

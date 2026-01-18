@@ -132,16 +132,47 @@ def export_to_onshape(part, output_dir="exports"):
         x_axis = norm(v1)  # x-axis along first edge direction
         y_axis = cross(z_axis, x_axis)  # y-axis perpendicular in plane
 
+        # Filter points for export:
+        # 1. Skip FP points ONLY if they're duplicates (at corner coordinates)
+        #    For intermediate tabs, FP points define flange geometry and must be kept
+        # 2. Remove other consecutive duplicates
+        point_ids = list(tab_data["points"].keys())
+        filtered_pts = []
+        filtered_ids = []
+        tolerance = 1e-6
+
+        for i, (point_id, p) in enumerate(zip(point_ids, pts)):
+            # Check if this point is a duplicate of any already-added point
+            is_duplicate = False
+            for existing_pt in filtered_pts:
+                dist = math.sqrt(sum((p[j] - existing_pt[j])**2 for j in range(3)))
+                if dist < tolerance:
+                    is_duplicate = True
+                    break
+
+            # Skip duplicates (this catches FP points at corner coordinates)
+            if is_duplicate:
+                continue
+
+            # Add unique points
+            filtered_pts.append(p)
+            filtered_ids.append(point_id)
+
         # Project 3D points to 2D local plane (relative to origin)
         points_2d = []
-        for p in pts:
+        for p in filtered_pts:
             vec = sub(p, origin)  # Use calculated origin
             u, v = dot(vec, x_axis), dot(vec, y_axis)
             points_2d.append(f"vector({u}, {v}) * millimeter")
 
         # Ensure the loop is closed for 2D sketch
-        if points_2d[0] != points_2d[-1]:
-             points_2d.append(points_2d[0])
+        # Check if first and last are different before closing
+        if len(points_2d) > 0:
+            first_pt = filtered_pts[0]
+            last_pt = filtered_pts[-1]
+            dist = math.sqrt(sum((first_pt[j] - last_pt[j])**2 for j in range(3)))
+            if dist > tolerance:
+                points_2d.append(points_2d[0])
 
         # Format Vectors for FS (use calculated origin as sketch plane origin)
         fs_org = f"vector({origin[0]}, {origin[1]}, {origin[2]}) * millimeter"
@@ -153,29 +184,52 @@ def export_to_onshape(part, output_dir="exports"):
         fs.append(f'        // --- Tab {tab_id} ---')
         fs.append(f'        var sketch{tab_id} = newSketchOnPlane(context, id + "sketch{tab_id}", {{ "sketchPlane" : plane({fs_org}, {fs_norm}, {fs_x}) }});')
         fs.append(f'        skPolyline(sketch{tab_id}, "poly{tab_id}", {{ "points" : [{", ".join(points_2d)}] }});')
-
-        # --- Add holes/mounts to sketch ---
-        if "mounts" in tab_data:
-            for mount_idx, mount in enumerate(tab_data["mounts"]):
-                # Mount coordinates are already in the local (u, v) system
-                # u is along x_axis, v is along y_axis
-                mount_u = mount["u"]
-                mount_v = mount["v"]
-                mount_radius = mount["size"]
-
-                fs.append(f'        skCircle(sketch{tab_id}, "hole{tab_id}_{mount_idx}", {{')
-                fs.append(f'            "center" : vector({mount_u}, {mount_v}) * millimeter,')
-                fs.append(f'            "radius" : {mount_radius} * millimeter')
-                fs.append(f'        }});')
-
         fs.append(f'        skSolve(sketch{tab_id});')
 
+        # Extrude the tab body first (without holes)
         fs.append(f'        opExtrude(context, id + "extrude{tab_id}", {{')
         fs.append(f'            "entities" : qSketchRegion(id + "sketch{tab_id}"),')
         fs.append(f'            "direction" : {fs_norm},')
         fs.append(f'            "endBound" : BoundingType.BLIND,')
         fs.append(f'            "endDepth" : thickness')
         fs.append(f'        }});')
+
+        # --- Create mount holes as boolean cuts ---
+        if "mounts" in tab_data:
+            for mount_idx, mount in enumerate(tab_data["mounts"]):
+                # Mount coordinates are in local (u, v) system
+                mount_u = mount["u"]
+                mount_v = mount["v"]
+                mount_radius = mount["size"]
+
+                # Convert mount center from 2D local to 3D global coordinates
+                mount_center_3d = [
+                    origin[0] + mount_u * x_axis[0] + mount_v * y_axis[0],
+                    origin[1] + mount_u * x_axis[1] + mount_v * y_axis[1],
+                    origin[2] + mount_u * x_axis[2] + mount_v * y_axis[2]
+                ]
+
+                fs.append(f'')
+                fs.append(f'        // Mount hole {mount_idx} for tab {tab_id}')
+                fs.append(f'        var sketchHole{tab_id}_{mount_idx} = newSketchOnPlane(context, id + "sketchHole{tab_id}_{mount_idx}", {{')
+                fs.append(f'            "sketchPlane" : plane(vector({mount_center_3d[0]}, {mount_center_3d[1]}, {mount_center_3d[2]}) * millimeter, {fs_norm}, {fs_x})')
+                fs.append(f'        }});')
+                fs.append(f'        skCircle(sketchHole{tab_id}_{mount_idx}, "holeCircle{tab_id}_{mount_idx}", {{')
+                fs.append(f'            "center" : vector(0, 0) * millimeter,')
+                fs.append(f'            "radius" : {mount_radius} * millimeter')
+                fs.append(f'        }});')
+                fs.append(f'        skSolve(sketchHole{tab_id}_{mount_idx});')
+                fs.append(f'        opExtrude(context, id + "extrudeHole{tab_id}_{mount_idx}", {{')
+                fs.append(f'            "entities" : qSketchRegion(id + "sketchHole{tab_id}_{mount_idx}"),')
+                fs.append(f'            "direction" : {fs_norm},')
+                fs.append(f'            "endBound" : BoundingType.BLIND,')
+                fs.append(f'            "endDepth" : thickness * 2')  # Make it longer to ensure it cuts through
+                fs.append(f'        }});')
+                fs.append(f'        opBoolean(context, id + "cutHole{tab_id}_{mount_idx}", {{')
+                fs.append(f'            "targets" : qCreatedBy(id + "extrude{tab_id}", EntityType.BODY),')
+                fs.append(f'            "tools" : qCreatedBy(id + "extrudeHole{tab_id}_{mount_idx}", EntityType.BODY),')
+                fs.append(f'            "operationType" : BooleanOperationType.SUBTRACTION')
+                fs.append(f'        }});')
         extrude_queries.append(f'qCreatedBy(id + "extrude{tab_id}", EntityType.BODY)')
 
     # --- Merge Operation ---

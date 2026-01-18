@@ -23,7 +23,10 @@
       "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\Wittig\\\\PycharmProjects\\\\sheeco && py tests\\\\test_segment_collision.py\")",
       "Bash(git checkout:*)",
       "WebFetch(domain:github.com)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(1)"
     ]
   }
 }

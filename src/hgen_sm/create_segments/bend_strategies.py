@@ -144,7 +144,7 @@ def one_bend(segment, filter_cfg):
     1. Define the bend line (from plane intersection)
     2. Project corner points onto bend line to get bending points (BP)
     3. Create flange points (FP) extending from BP toward each plane by min_flange_length
-    4. Connection: Corner Point → Flange Point → Bending Point
+    4. Connection: Corner Point -> Flange Point -> Bending Point
     """
     tab_x = segment.tabs['tab_x']
     tab_x_id = tab_x.tab_id
@@ -205,6 +205,22 @@ def one_bend(segment, filter_cfg):
             if angle_too_small:
                 continue
 
+            # ---- FILTER: Check flange clearance ----
+            # Verify that flange points are on the correct side of their respective planes
+            # FPx should be on plane_x side, FPz should be on plane_z side
+            # Calculate which side of the bend axis each FP is on
+            dist_FPxL_to_plane_z = abs(np.dot(FPxL - plane_z.position, plane_z.orientation))
+            dist_FPxR_to_plane_z = abs(np.dot(FPxR - plane_z.position, plane_z.orientation))
+            dist_FPzL_to_plane_x = abs(np.dot(FPzL - plane_x.position, plane_x.orientation))
+            dist_FPzR_to_plane_x = abs(np.dot(FPzR - plane_x.position, plane_x.orientation))
+
+            # Flange points should maintain minimum clearance from opposite plane
+            # This ensures the flange doesn't interfere with the opposite tab
+            min_clearance = min_flange_length * 0.5  # Allow 50% of flange length as minimum clearance
+            if (dist_FPxL_to_plane_z < min_clearance or dist_FPxR_to_plane_z < min_clearance or
+                dist_FPzL_to_plane_x < min_clearance or dist_FPzR_to_plane_x < min_clearance):
+                continue
+
             # ---- Determine L/R correspondence to avoid crossed connections ----
             # Check if connection lines would cross (using 3D distance check)
             dist_xL_zL = np.linalg.norm(CP_xL - CP_zL)
@@ -217,48 +233,133 @@ def one_bend(segment, filter_cfg):
             new_tab_z = new_segment.tabs['tab_z']
 
             # ---- Insert Points in Tab x ----
-            # Points go: Corner (CP) → Flange (FP) → Bend (BP)
+            # Points go: Corner (CP) -> Flange (FP) -> Bend (BP)
             # CRITICAL: FP must use original corner coordinates, not calculated flange points
-            CPL = {CP_xL_id: CP_xL}
-            bend_points_x = {
-                f"FP{tab_x_id}{tab_z_id}L": CP_xL,  # Use corner coordinate
-                f"BP{tab_x_id}{tab_z_id}L": BPL,
-                f"BP{tab_x_id}{tab_z_id}R": BPR,
-                f"FP{tab_x_id}{tab_z_id}R": CP_xR   # Use corner coordinate
-            }
+            # CRITICAL: Insert after the corner that comes LATER in the perimeter order
+            # Perimeter flows: A → B → C → D → (back to A)
+            corner_order = list(new_tab_x.points.keys())
+            idx_L = corner_order.index(CP_xL_id)
+            idx_R = corner_order.index(CP_xR_id)
 
-            new_tab_x.insert_points(L=CPL, add_points=bend_points_x)
+            # Check for wrap-around edge (D→A case: idx_L=3, idx_R=0 or idx_L=0, idx_R=3)
+            is_wraparound = (idx_L == 3 and idx_R == 0) or (idx_L == 0 and idx_R == 3)
 
-            if not are_corners_neighbours(CP_xL_id, CP_xR_id):
-                rm_point_id = next_cp(new_tab_x.rectangle.points, CP_xL_id)
-                rm_point = new_tab_x.rectangle.points[rm_point_id]
-                new_tab_x.remove_point(point={rm_point_id: rm_point})
-
-            # ---- Insert Points in Tab z ----
-            # CRITICAL: FP must use original corner coordinates, not calculated flange points
-            CPL = {CP_zL_id: CP_zL}
-            if not fp_lines_cross:
-                bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}L": CP_zL,  # Use corner coordinate
-                    f"BP{tab_z_id}{tab_x_id}L": BPL,
-                    f"BP{tab_z_id}{tab_x_id}R": BPR,
-                    f"FP{tab_z_id}{tab_x_id}R": CP_zR   # Use corner coordinate
+            if is_wraparound:
+                # Wrap-around edge (D→A or A→D)
+                # Always insert after the corner with higher index (D = index 3)
+                if idx_L == 3:  # Edge D→A (L=D, R=A)
+                    # Insert after D, flow: [... C D] → FPL → BPL → BPR → FPR → [A B ...]
+                    insert_after_id = CP_xL_id  # D
+                    insert_after_val = CP_xL
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_z_id}L": FPxL,  # FP at min_flange_length from bend axis
+                        f"BP{tab_x_id}_{tab_z_id}L": BPL,
+                        f"BP{tab_x_id}_{tab_z_id}R": BPR,
+                        f"FP{tab_x_id}_{tab_z_id}R": FPxR   # FP at min_flange_length from bend axis
+                    }
+                else:  # Edge A→D (L=A, R=D)
+                    # Insert after D, flow: [... C D] → FPR → BPR → BPL → FPL → [A B ...]
+                    insert_after_id = CP_xR_id  # D
+                    insert_after_val = CP_xR
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_z_id}R": FPxR,  # FP at min_flange_length from bend axis
+                        f"BP{tab_x_id}_{tab_z_id}R": BPR,
+                        f"BP{tab_x_id}_{tab_z_id}L": BPL,
+                        f"FP{tab_x_id}_{tab_z_id}L": FPxL   # FP at min_flange_length from bend axis
+                    }
+            elif idx_R > idx_L:
+                # Normal case: R comes after L in perimeter (e.g., A→B, B→C, C→D)
+                # Insert after L, flow: [... prev L] → FPL → BPL → BPR → FPR → [R next ...]
+                insert_after_id = CP_xL_id  # Insert after L
+                insert_after_val = CP_xL
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_z_id}L": FPxL,  # FP at min_flange_length from bend axis
+                    f"BP{tab_x_id}_{tab_z_id}L": BPL,
+                    f"BP{tab_x_id}_{tab_z_id}R": BPR,
+                    f"FP{tab_x_id}_{tab_z_id}R": FPxR   # FP at min_flange_length from bend axis
                 }
             else:
-                # Lines cross - swap L/R to fix correspondence
-                bend_points_z = {
-                    f"FP{tab_z_id}{tab_x_id}R": CP_zR,  # Use corner coordinate
-                    f"BP{tab_z_id}{tab_x_id}R": BPR,
-                    f"BP{tab_z_id}{tab_x_id}L": BPL,
-                    f"FP{tab_z_id}{tab_x_id}L": CP_zL   # Use corner coordinate
+                # Reverse case: L comes after R in perimeter (e.g., B→A, C→B, D→C)
+                # Insert after R, flow: [... prev R] → FPR → BPR → BPL → FPL → [L next ...]
+                insert_after_id = CP_xR_id  # Insert after R
+                insert_after_val = CP_xR
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_z_id}R": FPxR,  # FP at min_flange_length from bend axis
+                    f"BP{tab_x_id}_{tab_z_id}R": BPR,
+                    f"BP{tab_x_id}_{tab_z_id}L": BPL,
+                    f"FP{tab_x_id}_{tab_z_id}L": FPxL   # FP at min_flange_length from bend axis
                 }
 
-            new_tab_z.insert_points(L=CPL, add_points=bend_points_z)
+            new_tab_x.insert_points(L={insert_after_id: insert_after_val}, add_points=bend_points_x)
 
-            if not are_corners_neighbours(CP_zL_id, CP_zR_id):
-                rm_point_id = next_cp(new_tab_z.rectangle.points, CP_zL_id)
-                rm_point = new_tab_z.rectangle.points[rm_point_id]
-                new_tab_z.remove_point(point={rm_point_id: rm_point})
+            # NOTE: Corners are kept (tab is augmented, not trimmed)
+            # according to Direct Power Flows specification
+
+            # ---- Insert Points in Tab z ----
+            # CRITICAL: FP must use original corner coordinates
+            # CRITICAL: Insert after the corner that comes LATER in perimeter order
+            # CRITICAL: Handle crossing (when connection lines would cross)
+            corner_order_z = list(new_tab_z.points.keys())
+            idx_zL = corner_order_z.index(CP_zL_id)
+            idx_zR = corner_order_z.index(CP_zR_id)
+
+            # Check for wrap-around edge
+            is_wraparound_z = (idx_zL == 3 and idx_zR == 0) or (idx_zL == 0 and idx_zR == 3)
+
+            # Determine insertion point and order based on perimeter flow
+            if is_wraparound_z:
+                # Wrap-around edge (D→A or A→D)
+                if idx_zL == 3:  # Edge D→A (L=D, R=A)
+                    insert_after_z_id = CP_zL_id  # Insert after D
+                    insert_after_z_val = CP_zL
+                    base_order = "L_to_R"  # Base: FPL → BPL → BPR → FPR
+                else:  # Edge A→D (L=A, R=D)
+                    insert_after_z_id = CP_zR_id  # Insert after D
+                    insert_after_z_val = CP_zR
+                    base_order = "R_to_L"  # Base: FPR → BPR → BPL → FPL
+            elif idx_zR > idx_zL:
+                # Normal case: R comes after L (e.g., A→B, B→C, C→D)
+                # CRITICAL FIX: Insert after L (FIRST corner), NOT R
+                # Bend should be BETWEEN L and R: ... → L → [bend] → R → ...
+                insert_after_z_id = CP_zL_id  # FIXED: was CP_zR_id
+                insert_after_z_val = CP_zL
+                base_order = "L_to_R"  # FIXED: was "R_to_L"
+            else:
+                # Reverse case: L comes after R (e.g., B→A, C→B, D→C)
+                # Insert after R (FIRST corner in edge direction)
+                # Bend goes from R to L: ... → R → [bend] → L → ...
+                insert_after_z_id = CP_zR_id  # FIXED: was CP_zL_id
+                insert_after_z_val = CP_zR
+                base_order = "R_to_L"  # FIXED: was "L_to_R"
+
+            # Apply crossing adjustment: if connection lines cross, swap L/R
+            if fp_lines_cross:
+                # Connection lines cross - swap L/R in the base order
+                if base_order == "L_to_R":
+                    base_order = "R_to_L"
+                else:
+                    base_order = "L_to_R"
+
+            # Generate final point ordering using calculated flange points (FPzL, FPzR)
+            if base_order == "L_to_R":
+                bend_points_z = {
+                    f"FP{tab_z_id}_{tab_x_id}L": FPzL,  # FP at min_flange_length from bend axis
+                    f"BP{tab_z_id}_{tab_x_id}L": BPL,
+                    f"BP{tab_z_id}_{tab_x_id}R": BPR,
+                    f"FP{tab_z_id}_{tab_x_id}R": FPzR   # FP at min_flange_length from bend axis
+                }
+            else:  # R_to_L
+                bend_points_z = {
+                    f"FP{tab_z_id}_{tab_x_id}R": FPzR,  # FP at min_flange_length from bend axis
+                    f"BP{tab_z_id}_{tab_x_id}R": BPR,
+                    f"BP{tab_z_id}_{tab_x_id}L": BPL,
+                    f"FP{tab_z_id}_{tab_x_id}L": FPzL   # FP at min_flange_length from bend axis
+                }
+
+            new_tab_z.insert_points(L={insert_after_z_id: insert_after_z_val}, add_points=bend_points_z)
+
+            # NOTE: Corners are kept (tab is augmented, not trimmed)
+            # according to Direct Power Flows specification
 
             # ---- FILTER: Do Tabs cover Rects fully? ----
             if not tab_fully_contains_rectangle(new_tab_x, rect_x):
@@ -437,13 +538,57 @@ def two_bends(segment, filter_cfg):
 
             # Insert points in Tab x (with flange)
             # Use corner points for FP to ensure proper connection to original tab
-            bend_points_x = {
-                f"FP{tab_x_id}_{tab_y_id}L": CPxL,
-                f"BP{tab_x_id}_{tab_y_id}L": BPxL,
-                f"BP{tab_x_id}_{tab_y_id}R": BPxR,
-                f"FP{tab_x_id}_{tab_y_id}R": CPxR
-            }
-            new_tab_x.insert_points(L={CPxL_id: CPxL}, add_points=bend_points_x)
+            # CRITICAL: Insert after the corner that comes LATER in the perimeter order
+            corner_order_x = list(new_tab_x.points.keys())
+            idx_xL = corner_order_x.index(CPxL_id)
+            idx_xR = corner_order_x.index(CPxR_id)
+
+            # Check for wrap-around edge
+            is_wraparound_x = (idx_xL == 3 and idx_xR == 0) or (idx_xL == 0 and idx_xR == 3)
+
+            if is_wraparound_x:
+                # Wrap-around edge (D→A or A→D)
+                if idx_xL == 3:  # Edge D→A (L=D, R=A)
+                    insert_after_x_id = CPxL_id  # Insert after D
+                    insert_after_x_val = CPxL
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_y_id}L": CPxL,  # FP at D
+                        f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                        f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                        f"FP{tab_x_id}_{tab_y_id}R": CPxR   # FP at A
+                    }
+                else:  # Edge A→D (L=A, R=D)
+                    insert_after_x_id = CPxR_id  # Insert after D
+                    insert_after_x_val = CPxR
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_y_id}R": CPxR,  # FP at D
+                        f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                        f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                        f"FP{tab_x_id}_{tab_y_id}L": CPxL   # FP at A
+                    }
+            elif idx_xR > idx_xL:
+                # Normal case: R comes after L (e.g., A→B, B→C, C→D)
+                # CRITICAL FIX: Insert after L (FIRST corner), NOT R
+                insert_after_x_id = CPxL_id  # FIXED
+                insert_after_x_val = CPxL
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_y_id}L": CPxL,
+                    f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                    f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                    f"FP{tab_x_id}_{tab_y_id}R": CPxR
+                }
+            else:
+                # Reverse case: L comes after R (e.g., B→A, C→B, D→C)
+                # Insert after R (FIRST corner in edge direction)
+                insert_after_x_id = CPxR_id  # FIXED
+                insert_after_x_val = CPxR
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_y_id}R": CPxR,
+                    f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                    f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                    f"FP{tab_x_id}_{tab_y_id}L": CPxL
+                }
+            new_tab_x.insert_points(L={insert_after_x_id: insert_after_x_val}, add_points=bend_points_x)
 
             # Insert points in Tab y - IMPORTANT: Order must trace proper perimeter
             # Check if diagonals would cross in 3D (any projection: XY, XZ, YZ)
@@ -477,15 +622,60 @@ def two_bends(segment, filter_cfg):
 
             # Insert points in Tab z (with flange)
             # Use corner points for FP (CPzL/CPzR already swapped if z_swapped)
-            # Need to use the original corner ID for insert position
-            insert_corner_id = CPzR_id if z_swapped else CPzL_id
-            insert_corner_val = tab_z.points[insert_corner_id]
-            bend_points_z = {
-                f"FP{tab_z_id}_{tab_y_id}L": CPzL,
-                f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                f"FP{tab_z_id}_{tab_y_id}R": CPzR
-            }
+            # CRITICAL: Insert after the corner that comes LATER in the perimeter order
+            # Use original corner IDs before any swapping
+            orig_CPzL_id = CPzR_id if z_swapped else CPzL_id
+            orig_CPzR_id = CPzL_id if z_swapped else CPzR_id
+
+            corner_order_z = list(new_tab_z.points.keys())
+            idx_zL = corner_order_z.index(orig_CPzL_id)
+            idx_zR = corner_order_z.index(orig_CPzR_id)
+
+            # Check for wrap-around edge (using original indices)
+            is_wraparound_z_90 = (idx_zL == 3 and idx_zR == 0) or (idx_zL == 0 and idx_zR == 3)
+
+            if is_wraparound_z_90:
+                # Wrap-around edge (D→A or A→D)
+                if idx_zL == 3:  # Edge D→A (L=D, R=A)
+                    insert_corner_id = orig_CPzL_id  # Insert after D
+                    insert_corner_val = tab_z.points[insert_corner_id]
+                    bend_points_z = {
+                        f"FP{tab_z_id}_{tab_y_id}L": CPzL,  # FP at D
+                        f"BP{tab_z_id}_{tab_y_id}L": BPzL,
+                        f"BP{tab_z_id}_{tab_y_id}R": BPzR,
+                        f"FP{tab_z_id}_{tab_y_id}R": CPzR   # FP at A
+                    }
+                else:  # Edge A→D (L=A, R=D)
+                    insert_corner_id = orig_CPzR_id  # Insert after D
+                    insert_corner_val = tab_z.points[insert_corner_id]
+                    bend_points_z = {
+                        f"FP{tab_z_id}_{tab_y_id}R": CPzR,  # FP at D
+                        f"BP{tab_z_id}_{tab_y_id}R": BPzR,
+                        f"BP{tab_z_id}_{tab_y_id}L": BPzL,
+                        f"FP{tab_z_id}_{tab_y_id}L": CPzL   # FP at A
+                    }
+            elif idx_zR > idx_zL:
+                # Normal case: R comes after L (e.g., A→B, B→C, C→D)
+                # CRITICAL FIX: Insert after L (FIRST corner), NOT R
+                insert_corner_id = orig_CPzL_id  # FIXED
+                insert_corner_val = tab_z.points[insert_corner_id]
+                bend_points_z = {
+                    f"FP{tab_z_id}_{tab_y_id}L": CPzL,
+                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
+                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
+                    f"FP{tab_z_id}_{tab_y_id}R": CPzR
+                }
+            else:
+                # Reverse case: L comes after R (e.g., B→A, C→B, D→C)
+                # Insert after R (FIRST corner in edge direction)
+                insert_corner_id = orig_CPzR_id  # FIXED
+                insert_corner_val = tab_z.points[insert_corner_id]
+                bend_points_z = {
+                    f"FP{tab_z_id}_{tab_y_id}R": CPzR,
+                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
+                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
+                    f"FP{tab_z_id}_{tab_y_id}L": CPzL
+                }
             new_tab_z.insert_points(L={insert_corner_id: insert_corner_val}, add_points=bend_points_z)
 
             # ---- FILTER: Check for duplicates ----
@@ -501,6 +691,9 @@ def two_bends(segment, filter_cfg):
         CPxR_id = pair_x[1]
         CPxL = tab_x.points[CPxL_id]
         CPxR = tab_x.points[CPxR_id]
+
+        # Debug: Print edge selection
+        # print(f"  two_bend fallback: tab_{tab_x_id} edge {CPxL_id}->{CPxR_id}, CPxL={CPxL}, CPxR={CPxR}")
 
         # Calculate outward direction for tab_x
         edge_x_vec = CPxR - CPxL
@@ -621,13 +814,58 @@ def two_bends(segment, filter_cfg):
 
             # Insert points in Tab x (with flange)
             # Use corner points for FP to ensure proper connection
-            bend_points_x = {
-                f"FP{tab_x_id}_{tab_y_id}L": CPxL,
-                f"BP{tab_x_id}_{tab_y_id}L": BPxL,
-                f"BP{tab_x_id}_{tab_y_id}R": BPxR,
-                f"FP{tab_x_id}_{tab_y_id}R": CPxR
-            }
-            new_tab_x.insert_points(L={CPxL_id: CPxL}, add_points=bend_points_x)
+            # CRITICAL: Insert after the corner that comes LATER in the perimeter order
+            corner_order_x_fb = list(new_tab_x.points.keys())
+            idx_xL_fb = corner_order_x_fb.index(CPxL_id)
+            idx_xR_fb = corner_order_x_fb.index(CPxR_id)
+
+            # Check for wrap-around edge
+            is_wraparound_x_fb = (idx_xL_fb == 3 and idx_xR_fb == 0) or (idx_xL_fb == 0 and idx_xR_fb == 3)
+
+            if is_wraparound_x_fb:
+                # Wrap-around edge (D→A or A→D)
+                if idx_xL_fb == 3:  # Edge D→A (L=D, R=A)
+                    insert_after_x_fb_id = CPxL_id  # Insert after D
+                    insert_after_x_fb_val = CPxL
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_y_id}L": CPxL,  # FP at D
+                        f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                        f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                        f"FP{tab_x_id}_{tab_y_id}R": CPxR   # FP at A
+                    }
+                else:  # Edge A→D (L=A, R=D)
+                    insert_after_x_fb_id = CPxR_id  # Insert after D
+                    insert_after_x_fb_val = CPxR
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_y_id}R": CPxR,  # FP at D
+                        f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                        f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                        f"FP{tab_x_id}_{tab_y_id}L": CPxL   # FP at A
+                    }
+            elif idx_xR_fb > idx_xL_fb:
+                # Normal case: R comes after L (e.g., A→B, B→C, C→D)
+                # CRITICAL FIX: Insert after L (FIRST corner), NOT R
+                insert_after_x_fb_id = CPxL_id  # FIXED
+                insert_after_x_fb_val = CPxL
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_y_id}L": CPxL,
+                    f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                    f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                    f"FP{tab_x_id}_{tab_y_id}R": CPxR
+                }
+            else:
+                # Reverse case: L comes after R (e.g., B→A, C→B, D→C)
+                # Insert after R (FIRST corner in edge direction)
+                insert_after_x_fb_id = CPxR_id  # FIXED
+                insert_after_x_fb_val = CPxR
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_y_id}R": CPxR,
+                    f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                    f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                    f"FP{tab_x_id}_{tab_y_id}L": CPxL
+                }
+            # print(f"    -> Inserting after {insert_after_x_fb_id}, idx_xL={idx_xL_fb}, idx_xR={idx_xR_fb}, bend_points: {list(bend_points_x.keys())}")
+            new_tab_x.insert_points(L={insert_after_x_fb_id: insert_after_x_fb_val}, add_points=bend_points_x)
 
             # Insert points in Tab y - IMPORTANT: Order must trace proper perimeter
             # Check if diagonals would cross in 3D (any projection: XY, XZ, YZ)
@@ -660,29 +898,74 @@ def two_bends(segment, filter_cfg):
             new_tab_y.points = bend_points_y
 
             # Insert points in Tab z - use corner points for FP
+            # CRITICAL: Insert after the corner that comes LATER in the perimeter order
+            # CRITICAL: Handle crossing (when connection lines would cross)
+            corner_order_z_fb = list(new_tab_z.points.keys())
+
+            # Determine base point ordering based on perimeter flow
+            idx_zL_fb = corner_order_z_fb.index(CPzL_id)
+            idx_zR_fb = corner_order_z_fb.index(CPzR_id)
+
+            # Check for wrap-around edge
+            # Wrap-around occurs when indices are not adjacent (gap > 1)
+            # Examples: D->B (idx 3->1), C->A (idx 2->0), D->A (idx 3->0)
+            is_wraparound_z_fb = abs(idx_zL_fb - idx_zR_fb) > 1
+
+            # Determine insertion point and base order
+            if is_wraparound_z_fb:
+                # Wrap-around edge: indices not adjacent (e.g., D->B, C->A, D->A)
+                # Always insert after the corner with HIGHER index (before wrap point)
+                if idx_zL_fb > idx_zR_fb:
+                    # L has higher index (e.g., D->B: idx 3->1, C->A: idx 2->0)
+                    insert_z_id = CPzL_id  # Insert after L (higher index)
+                    insert_z_val = CPzL
+                    base_order_fb = "L_to_R"  # Path: L -> [bend] -> R
+                else:
+                    # R has higher index (e.g., B->D: idx 1->3, A->C: idx 0->2)
+                    insert_z_id = CPzR_id  # Insert after R (higher index)
+                    insert_z_val = CPzR
+                    base_order_fb = "R_to_L"  # Path: R -> [bend] -> L
+            elif idx_zR_fb > idx_zL_fb:
+                # Normal case: R comes after L (e.g., A->B, B->C, C->D)
+                # CRITICAL FIX: Insert after L (FIRST corner), NOT R
+                insert_z_id = CPzL_id  # FIXED
+                insert_z_val = CPzL
+                base_order_fb = "L_to_R"  # FIXED
+            else:
+                # Reverse case: L comes after R (e.g., B->A, C->B, D->C)
+                # Insert after R (FIRST corner in edge direction)
+                insert_z_id = CPzR_id  # FIXED
+                insert_z_val = CPzR
+                base_order_fb = "R_to_L"  # FIXED
+
+            # Check if connection lines cross and adjust order
             z_lines_cross = lines_cross(FPyzL, CPzL, CPzR, FPyxR)
             if z_lines_cross:
-                # Lines cross - swap L/R, so also swap corner correspondence
-                bend_points_z = {
-                    f"FP{tab_z_id}_{tab_y_id}R": CPzR,
-                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                    f"FP{tab_z_id}_{tab_y_id}L": CPzL
-                }
-            else:
+                # Lines cross - swap L/R in the base order
+                if base_order_fb == "L_to_R":
+                    base_order_fb = "R_to_L"
+                else:
+                    base_order_fb = "L_to_R"
+
+            # Generate final point ordering
+            if base_order_fb == "L_to_R":
                 bend_points_z = {
                     f"FP{tab_z_id}_{tab_y_id}L": CPzL,
                     f"BP{tab_z_id}_{tab_y_id}L": BPzL,
                     f"BP{tab_z_id}_{tab_y_id}R": BPzR,
                     f"FP{tab_z_id}_{tab_y_id}R": CPzR
                 }
+            else:  # R_to_L
+                bend_points_z = {
+                    f"FP{tab_z_id}_{tab_y_id}R": CPzR,
+                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
+                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
+                    f"FP{tab_z_id}_{tab_y_id}L": CPzL
+                }
 
-            if CPzM_id not in new_tab_z.points.keys():
-                new_tab_z.insert_points(L={CPzL_id: CPzL}, add_points=bend_points_z)
-            elif (CPzM == list(bend_points_z.values())[0]).all():
-                new_tab_z.insert_points(L={CPzM_id: CPzM}, add_points=bend_points_z)
-            else:
-                new_tab_z.insert_points(L={CPzL_id: CPzL}, add_points=bend_points_z)
+            # wrap_str = "WRAP" if is_wraparound_z_fb else "normal"
+            # print(f"    -> tab_{tab_z_id} edge {CPzL_id}->{CPzR_id} ({wrap_str}), inserting after {insert_z_id}, idx_zL={idx_zL_fb}, idx_zR={idx_zR_fb}")
+            new_tab_z.insert_points(L={insert_z_id: insert_z_val}, add_points=bend_points_z)
 
             # ---- FILTER: Do Tabs cover Rects fully? ----
             if filter_cfg.get('Tabs cover Rects', False):
