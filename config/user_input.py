@@ -116,4 +116,4 @@ with_mounts = [
 ]
 
 
-RECTANGLE_INPUTS = with_mounts
+RECTANGLE_INPUTS = B

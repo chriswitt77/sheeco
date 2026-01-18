@@ -222,10 +222,31 @@ def one_bend(segment, filter_cfg):
                 continue
 
             # ---- Determine L/R correspondence to avoid crossed connections ----
-            # Check if connection lines would cross (using 3D distance check)
-            dist_xL_zL = np.linalg.norm(CP_xL - CP_zL)
-            dist_xL_zR = np.linalg.norm(CP_xL - CP_zR)
-            fp_lines_cross = dist_xL_zR < dist_xL_zL
+            # Check if bend point ordering matches edge ordering
+            # For correct perimeter flow, the bend points should maintain the same
+            # relative ordering as the edge corners they connect to
+
+            # Get bend line direction (from BPL to BPR)
+            bend_vec = BPR - BPL
+            bend_len = np.linalg.norm(bend_vec)
+
+            if bend_len > 1e-9:
+                bend_dir = bend_vec / bend_len
+
+                # For tab_z edge: check if edge direction aligns with bend direction
+                edge_z_vec = CP_zR - CP_zL
+                # Project edge vector onto bend direction
+                # If positive: edge and bend point in same direction → L/R order is correct
+                # If negative: edge and bend point in opposite directions → need to swap
+                edge_z_proj = np.dot(edge_z_vec, bend_dir)
+
+                # Determine if we need to swap L/R for tab_z
+                fp_lines_cross = edge_z_proj < 0
+            else:
+                # Bend points coincide - fall back to distance check
+                dist_xL_zL = np.linalg.norm(CP_xL - CP_zL)
+                dist_xL_zR = np.linalg.norm(CP_xL - CP_zR)
+                fp_lines_cross = dist_xL_zR < dist_xL_zL
 
             # ---- Update Segment.tabs ----
             new_segment = segment.copy()

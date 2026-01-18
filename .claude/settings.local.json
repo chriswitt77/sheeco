@@ -27,7 +27,8 @@
       "Bash(dir:*)",
       "Bash(ls:*)",
       "Bash(1)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ]
   }
 }
