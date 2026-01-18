@@ -621,7 +621,7 @@ def two_bends(segment, filter_cfg):
             new_tab_y.points = bend_points_y
 
             # Insert points in Tab z (with flange)
-            # Use corner points for FP (CPzL/CPzR already swapped if z_swapped)
+            # Use calculated FP (FPzyL/FPzyR in tab_z's plane, already swapped if z_swapped)
             # CRITICAL: Insert after the corner that comes LATER in the perimeter order
             # Use original corner IDs before any swapping
             orig_CPzL_id = CPzR_id if z_swapped else CPzL_id
@@ -640,19 +640,19 @@ def two_bends(segment, filter_cfg):
                     insert_corner_id = orig_CPzL_id  # Insert after D
                     insert_corner_val = tab_z.points[insert_corner_id]
                     bend_points_z = {
-                        f"FP{tab_z_id}_{tab_y_id}L": CPzL,  # FP at D
+                        f"FP{tab_z_id}_{tab_y_id}L": FPzyL,
                         f"BP{tab_z_id}_{tab_y_id}L": BPzL,
                         f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                        f"FP{tab_z_id}_{tab_y_id}R": CPzR   # FP at A
+                        f"FP{tab_z_id}_{tab_y_id}R": FPzyR
                     }
                 else:  # Edge A→D (L=A, R=D)
                     insert_corner_id = orig_CPzR_id  # Insert after D
                     insert_corner_val = tab_z.points[insert_corner_id]
                     bend_points_z = {
-                        f"FP{tab_z_id}_{tab_y_id}R": CPzR,  # FP at D
+                        f"FP{tab_z_id}_{tab_y_id}R": FPzyR,
                         f"BP{tab_z_id}_{tab_y_id}R": BPzR,
                         f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                        f"FP{tab_z_id}_{tab_y_id}L": CPzL   # FP at A
+                        f"FP{tab_z_id}_{tab_y_id}L": FPzyL
                     }
             elif idx_zR > idx_zL:
                 # Normal case: R comes after L (e.g., A→B, B→C, C→D)
@@ -660,10 +660,10 @@ def two_bends(segment, filter_cfg):
                 insert_corner_id = orig_CPzL_id  # FIXED
                 insert_corner_val = tab_z.points[insert_corner_id]
                 bend_points_z = {
-                    f"FP{tab_z_id}_{tab_y_id}L": CPzL,
+                    f"FP{tab_z_id}_{tab_y_id}L": FPzyL,
                     f"BP{tab_z_id}_{tab_y_id}L": BPzL,
                     f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                    f"FP{tab_z_id}_{tab_y_id}R": CPzR
+                    f"FP{tab_z_id}_{tab_y_id}R": FPzyR
                 }
             else:
                 # Reverse case: L comes after R (e.g., B→A, C→B, D→C)
@@ -671,10 +671,10 @@ def two_bends(segment, filter_cfg):
                 insert_corner_id = orig_CPzR_id  # FIXED
                 insert_corner_val = tab_z.points[insert_corner_id]
                 bend_points_z = {
-                    f"FP{tab_z_id}_{tab_y_id}R": CPzR,
+                    f"FP{tab_z_id}_{tab_y_id}R": FPzyR,
                     f"BP{tab_z_id}_{tab_y_id}R": BPzR,
                     f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                    f"FP{tab_z_id}_{tab_y_id}L": CPzL
+                    f"FP{tab_z_id}_{tab_y_id}L": FPzyL
                 }
             new_tab_z.insert_points(L={insert_corner_id: insert_corner_val}, add_points=bend_points_z)
 
@@ -685,15 +685,12 @@ def two_bends(segment, filter_cfg):
 
             segment_library.append(new_segment)
 
-    # ========== APPROACH 2: CORNER CONNECTION (FALLBACK) ==========
+    # ========== APPROACH 2A: CORNER CONNECTION (NON-PARALLEL, WITH CORNER REMOVAL) ==========
     for pair_x in rect_x_edges:
         CPxL_id = pair_x[0]
         CPxR_id = pair_x[1]
         CPxL = tab_x.points[CPxL_id]
         CPxR = tab_x.points[CPxR_id]
-
-        # Debug: Print edge selection
-        # print(f"  two_bend fallback: tab_{tab_x_id} edge {CPxL_id}->{CPxR_id}, CPxL={CPxL}, CPxR={CPxR}")
 
         # Calculate outward direction for tab_x
         edge_x_vec = CPxR - CPxL
@@ -707,6 +704,7 @@ def two_bends(segment, filter_cfg):
         BPxL = CPxL + out_dir_x * min_flange_length
         BPxR = CPxR + out_dir_x * min_flange_length
 
+        # Iterate over corners for projection-based connection
         for i, CPzM_id in enumerate(rect_z.points):
             CPzM = rect_z.points[CPzM_id]
             CPzL_id = list(rect_z.points.keys())[(i - 1) % 4]
@@ -764,20 +762,8 @@ def two_bends(segment, filter_cfg):
                     new_tab_z.remove_point(point={CPzM_id: CPzM})
 
             if projection_point is None:
-                # Parallel case fallback
-                ortho_dir = np.cross(bend_xy.orientation, plane_z.orientation)
-                ortho_norm = np.linalg.norm(ortho_dir)
-                if ortho_norm < 1e-9:
-                    continue
-                ortho_dir /= ortho_norm
-
-                if np.dot(ortho_dir, CPzM - rect_z_center) < 0:
-                    ortho_dir *= -1
-
-                bend_yz_pos = CPzM + ortho_dir * min_flange_length
-                bend_yz_ori = bend_xy.orientation / np.linalg.norm(bend_xy.orientation)
-                bend_yz = Bend(position=bend_yz_pos, orientation=bend_yz_ori)
-                BPzM = bend_yz.position
+                # Skip parallel case - handled in Approach 2B
+                continue
 
             BPzL = project_onto_line(CPzL, bend_yz.position, bend_yz.orientation)
             BPzR = project_onto_line(CPzR, bend_yz.position, bend_yz.orientation)
@@ -897,7 +883,7 @@ def two_bends(segment, filter_cfg):
                 }
             new_tab_y.points = bend_points_y
 
-            # Insert points in Tab z - use corner points for FP
+            # Insert points in Tab z - use calculated FP (FPzyL, FPzyR in tab_z's plane)
             # CRITICAL: Insert after the corner that comes LATER in the perimeter order
             # CRITICAL: Handle crossing (when connection lines would cross)
             corner_order_z_fb = list(new_tab_z.points.keys())
@@ -939,7 +925,7 @@ def two_bends(segment, filter_cfg):
                 base_order_fb = "R_to_L"  # FIXED
 
             # Check if connection lines cross and adjust order
-            z_lines_cross = lines_cross(FPyzL, CPzL, CPzR, FPyxR)
+            z_lines_cross = lines_cross(FPzyL, CPzL, CPzR, FPzyR)
             if z_lines_cross:
                 # Lines cross - swap L/R in the base order
                 if base_order_fb == "L_to_R":
@@ -950,17 +936,17 @@ def two_bends(segment, filter_cfg):
             # Generate final point ordering
             if base_order_fb == "L_to_R":
                 bend_points_z = {
-                    f"FP{tab_z_id}_{tab_y_id}L": CPzL,
+                    f"FP{tab_z_id}_{tab_y_id}L": FPzyL,
                     f"BP{tab_z_id}_{tab_y_id}L": BPzL,
                     f"BP{tab_z_id}_{tab_y_id}R": BPzR,
-                    f"FP{tab_z_id}_{tab_y_id}R": CPzR
+                    f"FP{tab_z_id}_{tab_y_id}R": FPzyR
                 }
             else:  # R_to_L
                 bend_points_z = {
-                    f"FP{tab_z_id}_{tab_y_id}R": CPzR,
+                    f"FP{tab_z_id}_{tab_y_id}R": FPzyR,
                     f"BP{tab_z_id}_{tab_y_id}R": BPzR,
                     f"BP{tab_z_id}_{tab_y_id}L": BPzL,
-                    f"FP{tab_z_id}_{tab_y_id}L": CPzL
+                    f"FP{tab_z_id}_{tab_y_id}L": FPzyL
                 }
 
             # wrap_str = "WRAP" if is_wraparound_z_fb else "normal"
@@ -978,6 +964,226 @@ def two_bends(segment, filter_cfg):
             if filter_cfg.get('Too thin segments', False):
                 if thin_segment_filter(new_segment):
                     continue
+
+            # ---- FILTER: Check for duplicates ----
+            new_segment.tabs = {'tab_x': new_tab_x, 'tab_y': new_tab_y, 'tab_z': new_tab_z}
+            if is_duplicate_segment(new_segment, segment_library):
+                continue
+
+            segment_library.append(new_segment)
+
+    # ========== APPROACH 2B: EDGE CONNECTION (PARALLEL CASE, NO CORNER REMOVAL) ==========
+    for pair_x in rect_x_edges:
+        CPxL_id = pair_x[0]
+        CPxR_id = pair_x[1]
+        CPxL = tab_x.points[CPxL_id]
+        CPxR = tab_x.points[CPxR_id]
+
+        # Calculate outward direction for tab_x
+        edge_x_vec = CPxR - CPxL
+        edge_x_mid = (CPxL + CPxR) / 2
+        out_dir_x = np.cross(edge_x_vec, plane_x.orientation)
+        out_dir_x = normalize(out_dir_x)
+        if np.dot(out_dir_x, edge_x_mid - rect_x_center) < 0:
+            out_dir_x = -out_dir_x
+
+        # Shift tab_x edge outward to create flange
+        BPxL = CPxL + out_dir_x * min_flange_length
+        BPxR = CPxR + out_dir_x * min_flange_length
+
+        # Iterate over edges for parallel connection
+        for pair_z in rect_z_edges:
+            CPzL_id, CPzR_id = pair_z
+            CPzL = tab_z.points[CPzL_id]
+            CPzR = tab_z.points[CPzR_id]
+
+            # ---- FILTER: Is flange wide enough? ----
+            if not min_flange_width_filter(BPL=BPxL, BPR=BPxR):
+                continue
+
+            new_segment = segment.copy()
+            new_tab_x = new_segment.tabs['tab_x']
+            new_tab_z = new_segment.tabs['tab_z']
+
+            bend_xy = Bend(position=BPxL, orientation=BPxR - BPxL, BPL=BPxL, BPR=BPxR)
+
+            # Calculate outward direction for tab_z edge
+            edge_z_vec = CPzR - CPzL
+            edge_z_mid = (CPzL + CPzR) / 2
+            out_dir_z = np.cross(edge_z_vec, plane_z.orientation)
+            out_dir_z = normalize(out_dir_z)
+            if np.dot(out_dir_z, edge_z_mid - rect_z_center) < 0:
+                out_dir_z = -out_dir_z
+
+            # Check if this is parallel case (bend axis parallel to z-edge)
+            ortho_dir = np.cross(bend_xy.orientation, plane_z.orientation)
+            ortho_norm = np.linalg.norm(ortho_dir)
+            if ortho_norm < 1e-9:
+                # Bend is parallel to plane_z - skip (not the parallel case we want)
+                continue
+            ortho_dir /= ortho_norm
+
+            # Create second bend parallel to first bend
+            bend_yz_pos = edge_z_mid + ortho_dir * min_flange_length
+            bend_yz_ori = bend_xy.orientation / np.linalg.norm(bend_xy.orientation)
+            bend_yz = Bend(position=bend_yz_pos, orientation=bend_yz_ori)
+
+            # Project corners onto bend axis
+            BPzL = project_onto_line(CPzL, bend_yz.position, bend_yz.orientation)
+            BPzR = project_onto_line(CPzR, bend_yz.position, bend_yz.orientation)
+
+            # ---- FILTER: Is flange wide enough? ----
+            if not min_flange_width_filter(BPL=BPzL, BPR=BPzR):
+                continue
+
+            # Create intermediate triangle
+            BPzM = (BPzL + BPzR) / 2.0
+            BP_triangle = {"A": BPxL, "B": BPxR, "C": BPzM}
+            plane_y = calculate_plane(triangle=BP_triangle)
+
+            tab_y_id = f"{tab_x_id}{tab_z_id}"
+            new_tab_y = Tab(tab_id=tab_y_id, points=BP_triangle)
+
+            # ---- FILTER: Minimum bend angle ----
+            if filter_cfg.get('Min Bend Angle', True):
+                if not minimum_angle_filter(plane_x, plane_y):
+                    continue
+                if not minimum_angle_filter(plane_y, plane_z):
+                    continue
+
+            # Calculate flange points with angle checks
+            FPxyL, FPxyR, FPyxL, FPyxR, angle_check_xy = calculate_flange_points_with_angle_check(
+                BPxL, BPxR, plane_x, plane_y
+            )
+            if angle_check_xy:
+                continue
+
+            FPyzL, FPyzR, FPzyL, FPzyR, angle_check_yz = calculate_flange_points_with_angle_check(
+                BPzL, BPzR, plane_y, plane_z
+            )
+            if angle_check_yz:
+                continue
+
+            # Insert points in Tab x - same logic as Approach 1
+            corner_order_x_fb = list(new_tab_x.points.keys())
+            idx_xL_fb = corner_order_x_fb.index(CPxL_id)
+            idx_xR_fb = corner_order_x_fb.index(CPxR_id)
+
+            is_wraparound_x_fb = (idx_xL_fb == 3 and idx_xR_fb == 0) or (idx_xL_fb == 0 and idx_xR_fb == 3)
+
+            if is_wraparound_x_fb:
+                if idx_xL_fb == 3:
+                    insert_after_x_fb_id = CPxL_id
+                    insert_after_x_fb_val = CPxL
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_y_id}L": CPxL,
+                        f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                        f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                        f"FP{tab_x_id}_{tab_y_id}R": CPxR
+                    }
+                else:
+                    insert_after_x_fb_id = CPxR_id
+                    insert_after_x_fb_val = CPxR
+                    bend_points_x = {
+                        f"FP{tab_x_id}_{tab_y_id}R": CPxR,
+                        f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                        f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                        f"FP{tab_x_id}_{tab_y_id}L": CPxL
+                    }
+            elif idx_xR_fb > idx_xL_fb:
+                insert_after_x_fb_id = CPxL_id
+                insert_after_x_fb_val = CPxL
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_y_id}L": CPxL,
+                    f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                    f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                    f"FP{tab_x_id}_{tab_y_id}R": CPxR
+                }
+            else:
+                insert_after_x_fb_id = CPxR_id
+                insert_after_x_fb_val = CPxR
+                bend_points_x = {
+                    f"FP{tab_x_id}_{tab_y_id}R": CPxR,
+                    f"BP{tab_x_id}_{tab_y_id}R": BPxR,
+                    f"BP{tab_x_id}_{tab_y_id}L": BPxL,
+                    f"FP{tab_x_id}_{tab_y_id}L": CPxL
+                }
+            new_tab_x.insert_points(L={insert_after_x_fb_id: insert_after_x_fb_val}, add_points=bend_points_x)
+
+            # Insert points in Tab y
+            if diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL):
+                bend_points_y = {
+                    f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
+                    f"BP{tab_y_id}_{tab_x_id}L": BPxL,
+                    f"BP{tab_y_id}_{tab_x_id}R": BPxR,
+                    f"FP{tab_y_id}_{tab_x_id}R": FPyxR,
+                    f"FP{tab_y_id}_{tab_z_id}L": FPyzL,
+                    f"BP{tab_y_id}_{tab_z_id}L": BPzL,
+                    f"BP{tab_y_id}_{tab_z_id}R": BPzR,
+                    f"FP{tab_y_id}_{tab_z_id}R": FPyzR
+                }
+            else:
+                bend_points_y = {
+                    f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
+                    f"BP{tab_y_id}_{tab_x_id}L": BPxL,
+                    f"BP{tab_y_id}_{tab_x_id}R": BPxR,
+                    f"FP{tab_y_id}_{tab_x_id}R": FPyxR,
+                    f"FP{tab_y_id}_{tab_z_id}R": FPyzR,
+                    f"BP{tab_y_id}_{tab_z_id}R": BPzR,
+                    f"BP{tab_y_id}_{tab_z_id}L": BPzL,
+                    f"FP{tab_y_id}_{tab_z_id}L": FPyzL
+                }
+            new_tab_y.points = bend_points_y
+
+            # Insert points in Tab z - same logic as Approach 1
+            corner_order_z_fb = list(new_tab_z.points.keys())
+            idx_zL_fb = corner_order_z_fb.index(CPzL_id)
+            idx_zR_fb = corner_order_z_fb.index(CPzR_id)
+
+            is_wraparound_z_fb = abs(idx_zL_fb - idx_zR_fb) > 1
+
+            if is_wraparound_z_fb:
+                if idx_zL_fb > idx_zR_fb:
+                    insert_z_id = CPzL_id
+                    insert_z_val = CPzL
+                    base_order_fb = "L_to_R"
+                else:
+                    insert_z_id = CPzR_id
+                    insert_z_val = CPzR
+                    base_order_fb = "R_to_L"
+            elif idx_zR_fb > idx_zL_fb:
+                insert_z_id = CPzL_id
+                insert_z_val = CPzL
+                base_order_fb = "L_to_R"
+            else:
+                insert_z_id = CPzR_id
+                insert_z_val = CPzR
+                base_order_fb = "R_to_L"
+
+            # Check if connection lines cross
+            z_lines_cross = lines_cross(FPzyL, CPzL, CPzR, FPzyR)
+            if z_lines_cross:
+                if base_order_fb == "L_to_R":
+                    base_order_fb = "R_to_L"
+                else:
+                    base_order_fb = "L_to_R"
+
+            # Generate final point ordering
+            if base_order_fb == "L_to_R":
+                bend_points_z = {
+                    f"FP{tab_z_id}_{tab_y_id}L": FPzyL,
+                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
+                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
+                    f"FP{tab_z_id}_{tab_y_id}R": FPzyR
+                }
+            else:
+                bend_points_z = {
+                    f"FP{tab_z_id}_{tab_y_id}R": FPzyR,
+                    f"BP{tab_z_id}_{tab_y_id}R": BPzR,
+                    f"BP{tab_z_id}_{tab_y_id}L": BPzL,
+                    f"FP{tab_z_id}_{tab_y_id}L": FPzyL
+                }
+            new_tab_z.insert_points(L={insert_z_id: insert_z_val}, add_points=bend_points_z)
 
             # ---- FILTER: Check for duplicates ----
             new_segment.tabs = {'tab_x': new_tab_x, 'tab_y': new_tab_y, 'tab_z': new_tab_z}
