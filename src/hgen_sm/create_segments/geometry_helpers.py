@@ -31,7 +31,7 @@ def calculate_plane(rect = None, triangle = None):
     normal = normalize(np.cross(AB, AC))
 
     # Compute centroid (plane position)
-    position = (A + B + C) / 3
+    position = (A + C) / 2
 
     plane = SimpleNamespace(position=position, orientation=normal)
 

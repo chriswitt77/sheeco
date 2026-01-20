@@ -109,24 +109,37 @@ def are_corners_neighbours(cp_id1: str, cp_id2: str) -> bool:
     return normalized_pair in ADJACENT_PAIRS
 
 def minimum_angle_filter(planeA, planeB, min_bend_angle=min_bend_angle):
-    """Returns True if the bend angle between two planes is >= min_bend_angle."""
-    
-    # Normalize vectors just in case they aren't unit vectors
+    """
+    Returns True if the internal bend angle is >= min_bend_angle.
+    Uses plane positions to enforce consistent 'outward' normals.
+    """
+    # 1. Normalize initial vectors
     nA = planeA.orientation / np.linalg.norm(planeA.orientation)
     nB = planeB.orientation / np.linalg.norm(planeB.orientation)
 
-    # Calculate the angle between normals (in radians)
-    # Clip to [-1, 1] to prevent NaN due to float imprecision
-    dot_product = np.clip(np.dot(nA, nB), -1.0, 1.0)
-    angle_rad = np.arccos(dot_product)
-    
-    # Convert to degrees
-    angle_deg = np.degrees(angle_rad)
+    # 2. Create the chord vector from A to B
+    v_AB = planeB.position - planeA.position
 
-    # In sheet metal, the 'bend angle' is typically the deflection:
-    # 0 deg = flat, 90 deg = L-bend. 
-    bend_angle = angle_deg    
-    return bend_angle >= min_bend_angle
+    # Avoid zero-vector issues if positions are identical (rare)
+    if np.linalg.norm(v_AB) < 1e-6:
+        return True  # Treat as overlapping/safe
+
+    # 3. Enforce "Outward" Normals
+    if np.dot(nA, v_AB) > 0:
+        nA = -nA
+
+    # Check nB relative to path from B to A (which is -v_AB)
+    if np.dot(nB, -v_AB) > 0:
+        nB = -nB
+
+    # 4. Calculate Angle between Outward Normals
+    dot_product = np.clip(np.dot(nA, nB), -1.0, 1.0)
+    deflection_angle = np.degrees(np.arccos(dot_product))
+
+    # 5. Calculate Internal Angle
+    internal_angle = 180.0 - deflection_angle
+
+    return internal_angle >= min_bend_angle
 
 # ============================================================================
 # 3D COLLISION DETECTION
