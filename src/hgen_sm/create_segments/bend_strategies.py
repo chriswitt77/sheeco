@@ -56,6 +56,48 @@ def diagonals_cross_3d(p0, p3, p4, p7):
     return False
 
 
+def should_swap_z_side_ordering(FPyxL, FPyxR, FPyzR, FPyzL):
+    """
+    Determine if z-side L/R ordering should be swapped using hybrid approach.
+
+    Combines diagonal crossing detection with distance-based fallback for
+    collinear/degenerate cases where the diagonal crossing check fails.
+
+    Args:
+        FPyxL: Flange point on x-side, L orientation
+        FPyxR: Flange point on x-side, R orientation
+        FPyzR: Flange point on z-side, R orientation (default ordering)
+        FPyzL: Flange point on z-side, L orientation (default ordering)
+
+    Returns:
+        bool: True if z-side ordering should be swapped (L before R)
+    """
+    # First try the diagonal crossing check
+    crosses = diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL)
+
+    FPyxL = np.array(FPyxL)
+    FPyxR = np.array(FPyxR)
+    FPyzR = np.array(FPyzR)
+    FPyzL = np.array(FPyzL)
+
+    # Calculate distances for both orderings
+    # Default ordering: R-to-R and L-to-L connections
+    dist_default = (np.linalg.norm(FPyzR - FPyxR) +
+                    np.linalg.norm(FPyxL - FPyzL))
+
+    # Swapped ordering: R-to-L and L-to-R connections
+    dist_swapped = (np.linalg.norm(FPyzL - FPyxR) +
+                    np.linalg.norm(FPyxL - FPyzR))
+
+    # If distance difference is significant (>1mm), use distance-based decision
+    # This handles collinear cases where diagonal crossing check fails
+    if abs(dist_default - dist_swapped) > 1.0:
+        return dist_swapped < dist_default
+
+    # Otherwise, trust the diagonal crossing check
+    return crosses
+
+
 def segments_are_equal(seg1, seg2, tolerance=1e-6):
     """
     Check if two segments are geometrically identical by comparing their tab points.
@@ -612,11 +654,11 @@ def two_bends(segment, filter_cfg):
             new_tab_x.insert_points(L={insert_after_x_id: insert_after_x_val}, add_points=bend_points_x)
 
             # Insert points in Tab y - IMPORTANT: Order must trace proper perimeter
-            # Check if diagonals would cross in 3D (any projection: XY, XZ, YZ)
+            # Determine correct z-side ordering using hybrid approach
+            # (diagonal crossing check + distance-based fallback for collinear cases)
             # Default ordering: FPyxL -> ... -> FPyxR -> FPyzR -> ... -> FPyzL -> back to FPyxL
-            # The diagonals are (FPyxR to FPyzR) and (FPyzL to FPyxL)
-            # If they cross, swap z-side L/R to prevent self-intersection
-            if diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL):
+            # If swap is needed, use: FPyxL -> ... -> FPyxR -> FPyzL -> ... -> FPyzR -> back to FPyxL
+            if should_swap_z_side_ordering(FPyxL, FPyxR, FPyzR, FPyzL):
                 # Diagonals cross - swap z-side ordering (L↔R)
                 bend_points_y = {
                     f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
@@ -875,11 +917,11 @@ def two_bends(segment, filter_cfg):
             new_tab_x.insert_points(L={insert_after_x_fb_id: insert_after_x_fb_val}, add_points=bend_points_x)
 
             # Insert points in Tab y - IMPORTANT: Order must trace proper perimeter
-            # Check if diagonals would cross in 3D (any projection: XY, XZ, YZ)
+            # Determine correct z-side ordering using hybrid approach
+            # (diagonal crossing check + distance-based fallback for collinear cases)
             # Default ordering: FPyxL -> ... -> FPyxR -> FPyzR -> ... -> FPyzL -> back to FPyxL
-            # The diagonals are (FPyxR to FPyzR) and (FPyzL to FPyxL)
-            # If they cross, swap z-side L/R to prevent self-intersection
-            if diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL):
+            # If swap is needed, use: FPyxL -> ... -> FPyxR -> FPyzL -> ... -> FPyzR -> back to FPyxL
+            if should_swap_z_side_ordering(FPyxL, FPyxR, FPyzR, FPyzL):
                 # Diagonals cross - swap z-side ordering (L↔R)
                 bend_points_y = {
                     f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
@@ -1134,7 +1176,9 @@ def two_bends(segment, filter_cfg):
             new_tab_x.insert_points(L={insert_after_x_fb_id: insert_after_x_fb_val}, add_points=bend_points_x)
 
             # Insert points in Tab y
-            if diagonals_cross_3d(FPyxL, FPyxR, FPyzR, FPyzL):
+            # Determine correct z-side ordering using hybrid approach
+            # (diagonal crossing check + distance-based fallback for collinear cases)
+            if should_swap_z_side_ordering(FPyxL, FPyxR, FPyzR, FPyzL):
                 bend_points_y = {
                     f"FP{tab_y_id}_{tab_x_id}L": FPyxL,
                     f"BP{tab_y_id}_{tab_x_id}L": BPxL,
