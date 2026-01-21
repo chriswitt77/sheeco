@@ -4,7 +4,6 @@ start_time = time.time()
 import yaml
 
 from pathlib import Path
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_FILE = PROJECT_ROOT / "config" / "config.yaml"
 from config.user_input import RECTANGLE_INPUTS

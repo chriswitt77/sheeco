@@ -115,5 +115,168 @@ with_mounts = [
     }
 ]
 
+# -------------------------------------------------
+# ------ Verification and Validation Examples -----
+# -------------------------------------------------
 
-RECTANGLE_INPUTS = B
+ver_example_one = [
+    {
+        'pointA': [30, 30, 0],
+        'pointB': [30, 0, 0],
+        'pointC': [80, 0, 0]
+    },
+    {
+        'pointA': [-20, 80, 40],
+        'pointB': [-20, 40, 40],
+        'pointC': [-40, 40, 80]
+    }
+]
+
+ver_example_two = [
+    {
+        'pointA': [30, 30, 0],
+        'pointB': [30, 0, 0],
+        'pointC': [80, 0, 0]
+    },
+    {
+        'pointA': [0, 80, 40],
+        'pointB': [0, 40, 40],
+        'pointC': [0, 40, 80]
+    },
+    {
+        'pointA': [30, 0, 100],
+        'pointB': [30, 30, 100],
+        'pointC': [80, 30, 100]
+    }
+]
+
+shock_absorber_sequence = [['1', '2'], ['1', '0']]
+shock_absorber = [
+    {
+        'pointA': [20, 0, 0],
+        'pointB': [80, 0, 0],
+        'pointC': [80, 35, 0],
+    },
+    {
+        'pointA': [0, 0, 20],
+        'pointB': [0, 0, 60],
+        'pointC': [0, 80, 60],
+    },
+    {
+        'pointA': [20, 45, 0],
+        'pointB': [80, 45, 0],
+        'pointC': [80, 80, 0],
+    },
+]
+
+shock_absorber_double_tab_sequence = [['1', '2'], ['0', '1'], ['3', '2']]
+shock_absorber_double_tab = [
+    {
+        'pointA': [20, 0, 0],
+        'pointB': [80, 0, 0],
+        'pointC': [80, 35, 0],
+    },
+    {
+        'pointA': [0, 0, 20],
+        'pointB': [0, 0, 60],
+        'pointC': [0, 35, 60],
+    },
+    {
+        'pointA': [0, 45, 20],
+        'pointB': [0, 45, 60],
+        'pointC': [0, 80, 60],
+    },
+    {
+        'pointA': [20, 45, 0],
+        'pointB': [80, 45, 0],
+        'pointC': [80, 80, 0],
+    },
+]
+
+ver_acrylic_model = [
+    {
+        'pointA': [20, 0, 0],
+        'pointB': [50, 0, 0],
+        'pointC': [50, 40, 0]
+    },
+    {
+        'pointA': [0, 0, 10],
+        'pointB': [0, 0, 70],
+        'pointC': [0, 40, 70]
+    }
+]
+
+campbell_vertical = [
+    {
+        'pointA': [0, 0, 0],
+        'pointB': [40, 0, 0],
+        'pointC': [40, 40, 0]
+    },
+    {
+        'pointA': [20, 35, 60],
+        'pointB': [20, 5, 60],
+        'pointC': [20, 5, 100]
+    }
+]
+
+
+barda_example_one_sequence = [['0', '1'], ['0', '2'], ['0', '3'], ['3', '4'], ['3', '5'], ]
+barda_example_one = [
+    {
+        'pointA': [0, 0, 55],
+        'pointB': [0, 50, 55],
+        'pointC': [35, 50, 55]
+    },
+    {
+        'pointA': [-2, -25, 0],
+        'pointB': [-2, -30, 0],
+        'pointC': [32, -30, 0]
+    },
+    {
+        'pointA': [3, 75, 0],
+        'pointB': [3, 80, 0],
+        'pointC': [35, 80, 0]
+    },
+    {
+        'pointA': [58, 0, 55],
+        'pointB': [58, 50, 55],
+        'pointC': [95, 50, 55]
+    },
+    {
+        'pointA': [58, -25, 0],
+        'pointB': [58, -30, 0],
+        'pointC': [90, -30, 0]
+    },
+    {
+        'pointA': [58, 75, 0],
+        'pointB': [58, 80, 0],
+        'pointC': [95, 80, 0]
+    },
+]
+
+barda_example_two_sequence = [['0', '1'], ['0', '2'], ['0', '3']]
+barda_example_two = [
+    {
+        'pointA': [0, 0, 90],
+        'pointB': [120, 0, 90],
+        'pointC': [120, 220, 90]
+    },
+    {
+        'pointA': [0, 80, 0],
+        'pointB': [14, 80, 0],
+        'pointC': [14, 120, 0]
+    },
+    {
+        'pointA': [104, 56, 0],
+        'pointB': [120, 56, 0],
+        'pointC': [120, 126, 0],
+    },
+    {
+        'pointA': [-40, 252, 100],
+        'pointB': [120, 262, 100],
+        'pointC': [120, 262, 110],
+    },
+]
+
+# ver_example_one, ver_example_two, shock_absorber, shock_absorber_double_tab, ver_acrylic_model, campbell_vertical, barda_example_one, barda_example_two
+RECTANGLE_INPUTS = shock_absorber
