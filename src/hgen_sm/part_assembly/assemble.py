@@ -1,4 +1,4 @@
-from src.hgen_sm.part_assembly.merge_helpers import extract_tabs_from_segments, merge_points
+from src.hgen_sm.part_assembly.merge_helpers import extract_tabs_from_segments, merge_points, merge_multiple_tabs
 from src.hgen_sm.filters import collision_filter
 from src.hgen_sm.data import validate_part
 
@@ -27,31 +27,19 @@ def part_assembly(part, segments, filter_cfg):
             new_tabs_dict[tab_id].points = tab_local_id.points
 
 
-        # if a tab appears twice or more, grab the values from segments, merge them iteratively
+        # if a tab appears twice or more, use edge-based multi-merge
         if count > 1:
             tabs = extract_tabs_from_segments(tab_id, segments)
 
-            # Iteratively merge tabs pairwise
-            # Start with the first tab's points as the base
-            merged_points = tabs[0].points
+            # Use edge-based merge (handles 2+ connections)
+            merged_points = merge_multiple_tabs(tabs)
 
-            # Merge each subsequent tab one at a time
-            for i in range(1, len(tabs)):
-                # Create a temporary tab-like object with current merged state
-                class TempTab:
-                    def __init__(self, points):
-                        self.points = points
-
-                temp_merged = TempTab(merged_points)
-                new_points = merge_points([temp_merged, tabs[i]])
-
-                if new_points == None:
-                    return None
-                merged_points = new_points
+            if merged_points is None:
+                return None
 
             new_tabs_dict[tab_id].points = merged_points
             if len(new_tabs_dict[tab_id].points) > 12:
-                print("ERROR")
+                print(f"WARNING: Tab {tab_id} has {len(new_tabs_dict[tab_id].points)} points (expected <=12)")
 
     #FILTER: Check, if any elements collide with each other
     if filter_cfg.get("Collisions", False):

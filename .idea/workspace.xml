@@ -8,7 +8,8 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/__main__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/__main__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
