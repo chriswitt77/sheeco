@@ -16,10 +16,28 @@ import itertools
 from src.hgen_sm import Part
 from src.hgen_sm import initialize_objects, determine_sequences, create_segments, part_assembly, plot_solutions
 
+# Try to import custom sequence if it exists
+import config.user_input as user_input_module
+CUSTOM_SEQUENCE = None
+CUSTOM_SEQUENCE_NAME = None
+# Check if a custom sequence variable exists matching the current input name
+if hasattr(user_input_module, 'RECTANGLE_INPUTS'):
+    for attr_name in dir(user_input_module):
+        if attr_name.endswith('_sequence') and not attr_name.startswith('_'):
+            # Check if this sequence name matches a defined input configuration
+            base_name = attr_name.replace('_sequence', '')
+            if hasattr(user_input_module, base_name):
+                input_config = getattr(user_input_module, base_name)
+                if input_config == RECTANGLE_INPUTS:
+                    CUSTOM_SEQUENCE = getattr(user_input_module, attr_name)
+                    CUSTOM_SEQUENCE_NAME = attr_name
+                    break
+
 def main():
     segment_cfg = cfg.get('design_exploration')
     plot_cfg = cfg.get('plot')
     filter_cfg = cfg.get('filter')
+    topo_cfg = cfg.get('topologies', {})
 
     # ---- Import user input ----
     part = initialize_objects(RECTANGLE_INPUTS)
@@ -27,7 +45,16 @@ def main():
     # ---- Determine sensible Topologies ----
     # Returns list of (part_variant, sequences) tuples
     # This includes both separated and unseparated variants if configured
-    variants = determine_sequences(part, cfg)
+    use_custom = topo_cfg.get('use_custom_sequences', True)
+
+    if use_custom and CUSTOM_SEQUENCE is not None:
+        # Use custom sequence instead of auto-generation
+        print(f"Using custom sequence: {CUSTOM_SEQUENCE_NAME} = {CUSTOM_SEQUENCE}")
+        variants = [(part, [CUSTOM_SEQUENCE])]
+    else:
+        if CUSTOM_SEQUENCE is not None and not use_custom:
+            print(f"Custom sequence '{CUSTOM_SEQUENCE_NAME}' found but use_custom_sequences=false, using auto-generation")
+        variants = determine_sequences(part, cfg)
 
     # ---- Find ways to connect pairs ----
     solutions = []

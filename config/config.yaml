@@ -1,7 +1,8 @@
 topologies:
   simple_topology: true      # Sequential chain: 0-1, 1-2, 2-3, ...
-  tree_topology: false       # Spanning trees with different roots
-  all_pairs: false           # All valid pairs (fully connected)
+  tree_topology: true       # Spanning trees with different roots
+  all_pairs: true           # All valid pairs (fully connected)
+  use_custom_sequences: false # Use custom sequences from user_input.py (e.g., shock_absorber_sequence)
 
 surface_separation:
   auto_split: true           # Enable automatic surface splitting for multiple mounts

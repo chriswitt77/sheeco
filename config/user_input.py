@@ -278,5 +278,33 @@ barda_example_two = [
     },
 ]
 
+zylinderhalter = [
+    {
+        'pointA': [0, 0, 0],
+        'pointB': [40, 0, 0],
+        'pointC': [0, 40, 0],
+        'mounts': [
+            [70, 25, 20]
+        ]
+    },
+    {
+        'pointA': [0, 80, 0],
+        'pointB': [40, 80, 0],
+        'pointC': [0, 120, 0],
+        'mounts': [
+            [70, 25, 20]
+        ]
+    },
+    {
+        'pointA': [40, 0, 20],
+        'pointB': [80, 0, 20],
+        'pointC': [40, 40, 20],
+        'mounts': [
+            [70, 25, 20],
+            [75, 80, 20]
+        ]
+    }
+]
+
 # ver_example_one, ver_example_two, shock_absorber, shock_absorber_double_tab, ver_acrylic_model, campbell_vertical, barda_example_one, barda_example_two
 RECTANGLE_INPUTS = shock_absorber
