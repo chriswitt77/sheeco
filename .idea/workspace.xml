@@ -6,10 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="updated change order filter for colinear flange points">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,23 +50,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.__main__.executor&quot;: &quot;Run&quot;,
-    &quot;Python.bend_strategies.executor&quot;: &quot;Run&quot;,
-    &quot;Python.user_input.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;merger&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Wittig/PycharmProjects/sheeco&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.__main__.executor": "Run",
+    "Python.bend_strategies.executor": "Run",
+    "Python.user_input.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "merger",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/Wittig/PycharmProjects/sheeco",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "to.speed.mode.migration.done": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Wittig\PycharmProjects\sheeco\src\hgen_sm\preprocessing" />
@@ -179,7 +175,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768987723322</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="updated merger for more than two tab merges with edge usage filter">
+      <option name="closed" value="true" />
+      <created>1769009612586</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1769009612586</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -193,6 +197,7 @@
     <MESSAGE value="Split up two bend alternative approach, parallel edges still buggy" />
     <MESSAGE value="fixed one bend crossing check" />
     <MESSAGE value="updated merger to handle more than two tabs" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated merger to handle more than two tabs" />
+    <MESSAGE value="updated merger for more than two tab merges with edge usage filter" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated merger for more than two tab merges with edge usage filter" />
   </component>
 </project>
