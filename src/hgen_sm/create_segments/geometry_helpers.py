@@ -13,7 +13,7 @@ def calculate_plane(rect = None, triangle = None):
     Given a list of rectangles defined by three points (A, B, C),
     compute the position (centroid) and orientation (normal vector)
     of each corresponding plane.
-    
+
     Returns:
         dict: {
             "Plane[0]": {"position": np.ndarray, "normal": np.ndarray},
@@ -36,6 +36,39 @@ def calculate_plane(rect = None, triangle = None):
     plane = SimpleNamespace(position=position, orientation=normal)
 
     return plane
+
+
+def is_coplanar(plane_x, plane_z, tolerance=1e-6):
+    """
+    Check if two planes are coplanar (same plane, not just parallel).
+
+    Two planes are coplanar if:
+    1. Their normals are parallel (or anti-parallel)
+    2. They have the same distance from the origin along their normal
+
+    Args:
+        plane_x: First plane with .position and .orientation
+        plane_z: Second plane with .position and .orientation
+        tolerance: Tolerance for floating point comparison
+
+    Returns:
+        bool: True if planes are coplanar
+    """
+    # Check if normals are parallel (dot product = ±1)
+    dot_product = np.dot(plane_x.orientation, plane_z.orientation)
+    if abs(abs(dot_product) - 1.0) > tolerance:
+        return False  # Normals not parallel
+
+    # Check if both planes have the same distance from origin
+    # Distance from origin = dot(normal, position)
+    dist_x = np.dot(plane_x.orientation, plane_x.position)
+    dist_z = np.dot(plane_z.orientation, plane_z.position)
+
+    # Account for anti-parallel normals (flip sign)
+    if dot_product < 0:
+        dist_z = -dist_z
+
+    return abs(dist_x - dist_z) < tolerance
 
 def calculate_plane_intersection(planeA, planeB):
     n1, n2 = planeA.orientation, planeB.orientation

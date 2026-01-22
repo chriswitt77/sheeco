@@ -1,6 +1,6 @@
 topologies:
-  simple_topology: true      # Sequential chain: 0-1, 1-2, 2-3, ...
-  tree_topology: false       # Spanning trees with different roots
+  simple_topology: false      # Sequential chain: 0-1, 1-2, 2-3, ...
+  tree_topology: true       # Spanning trees with different roots
   all_pairs: false           # All valid pairs (fully connected)
   use_custom_sequences: false # Use custom sequences from user_input.py (e.g., shock_absorber_sequence)
 

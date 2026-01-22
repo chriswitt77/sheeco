@@ -191,6 +191,41 @@ def generate_all_valid_pairs(tabs: dict, tab_ids: List[str]) -> List[List[str]]:
     return pair_sequence
 
 
+def canonicalize_sequence(sequence: List[List[str]]) -> tuple:
+    """
+    Convert a sequence to a canonical form for topology equivalence checking.
+
+    Two sequences are topologically equivalent if they produce the same
+    undirected connectivity graph. This function creates a canonical
+    representation by:
+    1. Converting each pair to an undirected edge (smaller ID first)
+    2. Sorting all edges lexicographically
+    3. Returning as a tuple for use as a dictionary key
+
+    Args:
+        sequence: List of [tab_x_id, tab_z_id] pairs
+
+    Returns:
+        Canonical tuple of sorted edges, e.g. (('0', '1'), ('0', '2'))
+
+    Examples:
+        [['0', '1']] → (('0', '1'),)
+        [['1', '0']] → (('0', '1'),)  # Same as above
+        [['0', '1'], ['0', '2']] → (('0', '1'), ('0', '2'))
+        [['1', '0'], ['2', '0']] → (('0', '1'), ('0', '2'))  # Same as above
+    """
+    # Normalize each edge (smaller ID first) and collect as set
+    edges = set()
+    for pair in sequence:
+        t1, t2 = pair[0], pair[1]
+        # Normalize: always put smaller ID first
+        edge = (t1, t2) if t1 < t2 else (t2, t1)
+        edges.add(edge)
+
+    # Sort edges for canonical ordering
+    return tuple(sorted(edges))
+
+
 def generate_tree_sequences(tabs: dict, tab_ids: List[str]) -> List[List[List[str]]]:
     """
     Generate multiple tree topology sequences.
@@ -227,6 +262,7 @@ def generate_tree_sequences(tabs: dict, tab_ids: List[str]) -> List[List[List[st
 
     # Generate spanning trees using different root tabs
     sequences = []
+    seen_topologies = set()  # Track canonical forms to detect duplicates
 
     for root_id in tab_ids:
         # Build a spanning tree starting from this root
@@ -234,7 +270,11 @@ def generate_tree_sequences(tabs: dict, tab_ids: List[str]) -> List[List[List[st
         if tree and len(tree) == len(tab_ids) - 1:  # Valid spanning tree
             # Convert to list format
             pair_list = [[p[0], p[1]] for p in tree]
-            if pair_list not in sequences:  # Avoid duplicates
+
+            # Check if this topology is already seen
+            canonical = canonicalize_sequence(pair_list)
+            if canonical not in seen_topologies:
+                seen_topologies.add(canonical)
                 sequences.append(pair_list)
 
     return sequences

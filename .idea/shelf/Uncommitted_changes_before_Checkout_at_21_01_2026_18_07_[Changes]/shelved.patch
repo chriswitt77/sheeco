@@ -1,0 +1,74 @@
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"3ed5e560-133b-4045-927d-65f5c4b33eff\" name=\"Changes\" comment=\"updated change order filter for colinear flange points\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/config/config.yaml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/config/config.yaml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/config/user_input.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/config/user_input.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Python Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Merge.Settings\">\r\n    <option name=\"BRANCH\" value=\"origin/merger\" />\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"main\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;chriswitt77&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/chriswitt77/sheeco.git&quot;,\r\n    &quot;accountId&quot;: &quot;bfe90350-549c-4a71-9107-a2a72f86f73b&quot;\r\n  }\r\n}</component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 0\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"37nmaZ6Vd3YV1xiQvZtkaYfbvhP\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,\r\n    &quot;Python.__main__.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.bend_strategies.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.user_input.executor&quot;: &quot;Run&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\r\n    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;merger&quot;,\r\n    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,\r\n    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,\r\n    &quot;last_opened_file_path&quot;: &quot;C:/Users/Wittig/PycharmProjects/sheeco&quot;,\r\n    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,\r\n    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;\r\n  }\r\n}</component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"MoveFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\Wittig\\PycharmProjects\\sheeco\\src\\hgen_sm\\preprocessing\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-python-sdk-4e2b1448bda8-9a97661f3031-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.27397.106\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"3ed5e560-133b-4045-927d-65f5c4b33eff\" name=\"Changes\" comment=\"\" />\r\n      <created>1767547273802</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1767547273802</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"adjust for pycharm\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1767548137621</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1767548137621</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"Mindestlochabstand und rudimentäre Flächentrennung implementiert\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1767555722901</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1767555722901</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"bugged\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1767879523489</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1767879523489</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00004\" summary=\"bugged\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1767950684704</created>\r\n      <option name=\"number\" value=\"00004\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1767950684704</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00005\" summary=\"new 90-degree bend-strategy\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1767961380549</created>\r\n      <option name=\"number\" value=\"00005\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00005\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1767961380549</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00006\" summary=\"fixed plotting\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1768065202544</created>\r\n      <option name=\"number\" value=\"00006\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00006\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1768065202544</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00007\" summary=\"optional surface separation\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1768068801269</created>\r\n      <option name=\"number\" value=\"00007\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00007\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1768068801269</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00008\" summary=\"fixxed export (holes still bugged)\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1768398821293</created>\r\n      <option name=\"number\" value=\"00008\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00008\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1768398821293</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00009\" summary=\"Split up two bend alternative approach, parallel edges still buggy\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1768752840290</created>\r\n      <option name=\"number\" value=\"00009\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00009\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1768752840290</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00010\" summary=\"fixed one bend crossing check\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1768769842354</created>\r\n      <option name=\"number\" value=\"00010\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00010\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1768769842354</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00011\" summary=\"updated merger to handle more than two tabs\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1768987723322</created>\r\n      <option name=\"number\" value=\"00011\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00011\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1768987723322</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"12\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"adjust for pycharm\" />\r\n    <MESSAGE value=\"Mindestlochabstand und rudimentäre Flächentrennung implementiert\" />\r\n    <MESSAGE value=\"bugged\" />\r\n    <MESSAGE value=\"new 90-degree bend-strategy\" />\r\n    <MESSAGE value=\"fixed plotting\" />\r\n    <MESSAGE value=\"optional surface separation\" />\r\n    <MESSAGE value=\"fixxed export (holes still bugged)\" />\r\n    <MESSAGE value=\"Split up two bend alternative approach, parallel edges still buggy\" />\r\n    <MESSAGE value=\"fixed one bend crossing check\" />\r\n    <MESSAGE value=\"updated merger to handle more than two tabs\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"updated merger to handle more than two tabs\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 1121618a1fb5696de84a17cb4d26fa415da2ce1b)
++++ b/.idea/workspace.xml	(date 1769015223762)
+@@ -4,13 +4,7 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="updated change order filter for colinear flange points">
+-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/part_assembly/assemble.py" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" afterDir="false" />
+-    </list>
++    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="updated change order filter for colinear flange points" />
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -29,7 +23,7 @@
+   <component name="Git.Settings">
+     <option name="RECENT_BRANCH_BY_REPOSITORY">
+       <map>
+-        <entry key="$PROJECT_DIR$" value="main" />
++        <entry key="$PROJECT_DIR$" value="merger" />
+       </map>
+     </option>
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+@@ -54,23 +48,23 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent">{
+-  &quot;keyToString&quot;: {
+-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+-    &quot;Python.__main__.executor&quot;: &quot;Run&quot;,
+-    &quot;Python.bend_strategies.executor&quot;: &quot;Run&quot;,
+-    &quot;Python.user_input.executor&quot;: &quot;Run&quot;,
+-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+-    &quot;git-widget-placeholder&quot;: &quot;merger&quot;,
+-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Wittig/PycharmProjects/sheeco&quot;,
+-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
++  <component name="PropertiesComponent"><![CDATA[{
++  "keyToString": {
++    "ModuleVcsDetector.initialDetectionPerformed": "true",
++    "Python.__main__.executor": "Run",
++    "Python.bend_strategies.executor": "Run",
++    "Python.user_input.executor": "Run",
++    "RunOnceActivity.ShowReadmeOnStart": "true",
++    "RunOnceActivity.git.unshallow": "true",
++    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
++    "git-widget-placeholder": "main",
++    "ignore.virus.scanning.warn.message": "true",
++    "junie.onboarding.icon.badge.shown": "true",
++    "last_opened_file_path": "C:/Users/Wittig/PycharmProjects/sheeco",
++    "settings.editor.selected.configurable": "preferences.pluginManager",
++    "to.speed.mode.migration.done": "true"
+   }
+-}</component>
++}]]></component>
+   <component name="RecentsManager">
+     <key name="MoveFile.RECENT_KEYS">
+       <recent name="C:\Users\Wittig\PycharmProjects\sheeco\src\hgen_sm\preprocessing" />

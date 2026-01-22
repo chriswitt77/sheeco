@@ -88,9 +88,9 @@ same_plane = [
         'pointC': [50, 50, 0]
     },
     {
-        'pointA': [150, 0, 0],
-        'pointB': [20, 0, 0],
-        'pointC': [20, 50, 0]
+        'pointA': [150, 100, 0],
+        'pointB': [120, 100, 0],
+        'pointC': [120, 150, 0]
     }
 ]
 
@@ -288,9 +288,9 @@ zylinderhalter = [
         ]
     },
     {
-        'pointA': [0, 80, 0],
+        'pointA': [10, 80, 0],
         'pointB': [40, 80, 0],
-        'pointC': [0, 120, 0],
+        'pointC': [10, 120, 0],
         'mounts': [
             [20, 110, 0]
         ]
@@ -309,4 +309,4 @@ zylinderhalter = [
 ]
 
 # ver_example_one, ver_example_two, shock_absorber, shock_absorber_double_tab, ver_acrylic_model, campbell_vertical, barda_example_one, barda_example_two, zylinderhalter
-RECTANGLE_INPUTS = shock_absorber
+RECTANGLE_INPUTS = same_plane

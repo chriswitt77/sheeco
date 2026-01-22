@@ -9,6 +9,7 @@ from src.hgen_sm.create_segments.utils import line_plane_intersection, project_o
 from src.hgen_sm.filters import min_flange_width_filter, tab_fully_contains_rectangle, lines_cross, \
     are_corners_neighbours, minimum_angle_filter, thin_segment_filter
 from src.hgen_sm.data import Bend, Tab
+from src.hgen_sm.create_segments.bend_strategies_zero_bend import zero_bends
 
 
 def diagonals_cross_3d(p0, p3, p4, p7):
