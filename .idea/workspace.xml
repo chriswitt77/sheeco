@@ -4,14 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="updated change order filter for colinear flange points">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/choose_strategy.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/choose_strategy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/geometry_helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/geometry_helpers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/determine_sequences/choose_pairs.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/determine_sequences/choose_pairs.py" afterDir="false" />
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="zero_bend strategy added&#10;fixed sequence generation to eliminate same topologies from different sequences">
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies_zero_bend.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies_zero_bend.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -189,7 +183,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769009612586</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="zero_bend strategy added&#10;fixed sequence generation to eliminate same topologies from different sequences">
+      <option name="closed" value="true" />
+      <created>1769070270389</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1769070270389</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -204,6 +206,7 @@
     <MESSAGE value="fixed one bend crossing check" />
     <MESSAGE value="updated merger to handle more than two tabs" />
     <MESSAGE value="updated merger for more than two tab merges with edge usage filter" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated merger for more than two tab merges with edge usage filter" />
+    <MESSAGE value="zero_bend strategy added&#10;fixed sequence generation to eliminate same topologies from different sequences" />
+    <option name="LAST_COMMIT_MESSAGE" value="zero_bend strategy added&#10;fixed sequence generation to eliminate same topologies from different sequences" />
   </component>
 </project>

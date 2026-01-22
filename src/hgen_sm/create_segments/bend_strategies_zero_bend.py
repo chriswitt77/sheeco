@@ -63,19 +63,72 @@ def is_duplicate_segment(new_segment, segment_library, tolerance=1e-6):
     return False
 
 
-def is_rectangle_degenerate(A, B, C, D, tolerance=1e-3):
+def is_quadrilateral_self_intersecting(A, B, C, D):
     """
-    Check if four points form a degenerate (zero-area) rectangle.
+    Check if quadrilateral ABCD has self-intersecting edges.
 
-    Calculates the area using the cross product of diagonals.
-    A degenerate rectangle has near-zero area (all points collinear or nearly so).
+    A self-intersecting quadrilateral (bowtie shape) occurs when opposite
+    edges cross each other. We check if edge AB crosses edge CD, and if
+    edge BC crosses edge DA.
 
     Args:
-        A, B, C, D: Four corner points of the rectangle
+        A, B, C, D: Four corner points in order
+
+    Returns:
+        bool: True if quadrilateral is self-intersecting
+    """
+    def segments_intersect_2d(a1, a2, b1, b2):
+        """Check if line segment a1-a2 intersects with b1-b2 in 2D."""
+        d1 = np.array([a2[0] - a1[0], a2[1] - a1[1]], dtype=float)
+        d2 = np.array([b2[0] - b1[0], b2[1] - b1[1]], dtype=float)
+
+        cross = d1[0] * d2[1] - d1[1] * d2[0]
+        if abs(cross) < 1e-10:
+            return False  # Parallel lines
+
+        diff = np.array([b1[0] - a1[0], b1[1] - a1[1]], dtype=float)
+        t = (diff[0] * d2[1] - diff[1] * d2[0]) / cross
+        s = (diff[0] * d1[1] - diff[1] * d1[0]) / cross
+
+        # Check if intersection is within both segments (excluding endpoints)
+        return 0.01 < t < 0.99 and 0.01 < s < 0.99
+
+    A, B, C, D = np.array(A), np.array(B), np.array(C), np.array(D)
+
+    # Check XY projection (most common for coplanar tabs)
+    if segments_intersect_2d(A[:2], B[:2], C[:2], D[:2]):
+        return True
+    if segments_intersect_2d(B[:2], C[:2], D[:2], A[:2]):
+        return True
+
+    # Check XZ projection
+    if segments_intersect_2d([A[0], A[2]], [B[0], B[2]], [C[0], C[2]], [D[0], D[2]]):
+        return True
+    if segments_intersect_2d([B[0], B[2]], [C[0], C[2]], [D[0], D[2]], [A[0], A[2]]):
+        return True
+
+    # Check YZ projection
+    if segments_intersect_2d([A[1], A[2]], [B[1], B[2]], [C[1], C[2]], [D[1], D[2]]):
+        return True
+    if segments_intersect_2d([B[1], B[2]], [C[1], C[2]], [D[1], D[2]], [A[1], A[2]]):
+        return True
+
+    return False
+
+
+def is_rectangle_degenerate(A, B, C, D, tolerance=1e-3):
+    """
+    Check if four points form a degenerate (zero-area) quadrilateral.
+
+    Calculates the area using the cross product of diagonals.
+    A degenerate quadrilateral has near-zero area (all points collinear or nearly so).
+
+    Args:
+        A, B, C, D: Four corner points of the quadrilateral
         tolerance: Minimum area threshold (in square mm)
 
     Returns:
-        bool: True if rectangle is degenerate (area too small)
+        bool: True if quadrilateral is degenerate (area too small)
     """
     A, B, C, D = np.array(A), np.array(B), np.array(C), np.array(D)
 
@@ -164,10 +217,8 @@ def zero_bends(segment, filter_cfg):
             edge_z_dir = edge_z_vec / edge_z_len
 
             # ---- FILTER: Check edge parallelism ----
-            # For coplanar connection, edges should be roughly parallel
-            dot_product = abs(np.dot(edge_x_dir, edge_z_dir))
-            if dot_product < 0.9:  # Allow up to ~25° deviation
-                continue
+            # Removed: Edges don't need to be parallel
+            # Quadrilaterals are allowed as long as edges don't cross
 
             # ---- FILTER: Check reasonable connection distance ----
             connection_vec = edge_z_mid - edge_x_mid
@@ -251,8 +302,12 @@ def zero_bends(segment, filter_cfg):
                 'D': BPzL
             }
 
-            # ---- FILTER: Check if intermediate rectangle is degenerate ----
+            # ---- FILTER: Check if intermediate quadrilateral is degenerate ----
             if is_rectangle_degenerate(BPxL, BPxR, BPzR, BPzL):
+                continue
+
+            # ---- FILTER: Check if intermediate quadrilateral is self-intersecting ----
+            if is_quadrilateral_self_intersecting(BPxL, BPxR, BPzR, BPzL):
                 continue
 
             new_tab_y = Tab(tab_id=tab_y_id, points=intermediate_tab_points)
