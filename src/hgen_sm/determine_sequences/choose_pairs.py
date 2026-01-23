@@ -48,15 +48,35 @@ def determine_sequences(part, cfg):
         if unseparated_sequences:
             variants.append((unseparated_part, unseparated_sequences))
 
-    # Variant 2: Separated part (or original if no separation needed)
+    # Variant 2+: Separated part(s) (or original if no separation needed)
     if auto_split:
-        separated_part = separate_surfaces(part, cfg)
+        split_along = sep_cfg.get('split_along', 'auto')
+
+        if split_along == 'both':
+            # Generate variants for BOTH AB and AC split directions
+            for direction in ['AB', 'AC']:
+                # Create a modified config with specific split direction
+                cfg_copy = copy.deepcopy(cfg)
+                cfg_copy['surface_separation']['split_along'] = direction
+
+                # Create a fresh part copy for this direction
+                part_copy = part.copy()
+                separated_part = separate_surfaces(part_copy, cfg_copy, verbose=True)
+
+                separated_sequences = _generate_sequences_for_part(separated_part, cfg)
+                if separated_sequences:
+                    variants.append((separated_part, separated_sequences))
+        else:
+            # Original behavior: single separation direction
+            separated_part = separate_surfaces(part, cfg)
+            separated_sequences = _generate_sequences_for_part(separated_part, cfg)
+            if separated_sequences:
+                variants.append((separated_part, separated_sequences))
     else:
         separated_part = part
-
-    separated_sequences = _generate_sequences_for_part(separated_part, cfg)
-    if separated_sequences:
-        variants.append((separated_part, separated_sequences))
+        separated_sequences = _generate_sequences_for_part(separated_part, cfg)
+        if separated_sequences:
+            variants.append((separated_part, separated_sequences))
 
     # If no variants generated, return empty list
     if not variants:
