@@ -12,6 +12,7 @@ from src.hgen_sm.create_segments.utils import normalize
 from src.hgen_sm.create_segments.geometry_helpers import calculate_plane
 from src.hgen_sm.filters import min_flange_width_filter, tab_fully_contains_rectangle
 from src.hgen_sm.data import Tab
+from src.hgen_sm.data.validation import validate_perimeter_ordering
 
 
 def segments_are_equal(seg1, seg2, tolerance=1e-6):
@@ -140,6 +141,49 @@ def is_rectangle_degenerate(A, B, C, D, tolerance=1e-3):
     area = 0.5 * np.linalg.norm(cross_product)
 
     return area < tolerance
+
+
+def flange_extends_beyond_edge_range(CP_L, CP_R, FP_L, FP_R, tolerance_factor=1.05):
+    """
+    Check if flange points extend unreasonably far beyond the edge's span.
+
+    This catches cases where the flange is inserted at the wrong location,
+    causing flange points to project far outside the edge's natural range.
+    For example, if an edge spans y=[0,35] but flange points are at y=[0,40],
+    the flange extends 14% beyond the edge, indicating wrong insertion.
+
+    Args:
+        CP_L, CP_R: Corner points defining the edge
+        FP_L, FP_R: Flange points for this edge
+        tolerance_factor: How much extension is allowed (1.5 = 150% of edge length)
+
+    Returns:
+        True if flanges extend too far (should be filtered)
+    """
+    CP_L, CP_R = np.array(CP_L), np.array(CP_R)
+    FP_L, FP_R = np.array(FP_L), np.array(FP_R)
+
+    # Edge vector and length
+    edge_vec = CP_R - CP_L
+    edge_length = np.linalg.norm(edge_vec)
+
+    if edge_length < 1e-6:
+        return False  # Degenerate edge, can't check
+
+    edge_dir = edge_vec / edge_length
+
+    # Project FP points onto edge direction to see where they land relative to edge
+    for FP, CP_name in [(FP_L, 'L'), (FP_R, 'R')]:
+        vec_to_fp = FP - CP_L
+        projection = np.dot(vec_to_fp, edge_dir)
+
+        # Check if FP projects beyond edge endpoints by too much
+        if projection < -edge_length * 0.5:  # Too far before start
+            return True
+        if projection > edge_length * tolerance_factor:  # Too far past end
+            return True
+
+    return False
 
 
 def zero_bends(segment, filter_cfg):
@@ -280,6 +324,14 @@ def zero_bends(segment, filter_cfg):
             if not min_flange_width_filter(BPL=BPzL, BPR=BPzR):
                 continue
 
+            # ---- FILTER: Check if flanges extend too far beyond edge range ----
+            # This catches cases where wrong edge/insertion point causes flanges
+            # to extend far outside the edge's natural span
+            if flange_extends_beyond_edge_range(CP_xL, CP_xR, FPxL, FPxR):
+                continue
+            if flange_extends_beyond_edge_range(CP_zL, CP_zR, FPzL, FPzR):
+                continue
+
             # ---- Create Intermediate Rectangular Tab ----
             # The intermediate tab connects the extended bend points
             # Corner points form a closed rectangle: BPxL → BPxR → BPzR → BPzL
@@ -416,6 +468,15 @@ def zero_bends(segment, filter_cfg):
             if not tab_fully_contains_rectangle(new_tab_x, rect_x):
                 continue
             if not tab_fully_contains_rectangle(new_tab_z, rect_z):
+                continue
+
+            # ---- FILTER: Check for self-intersecting perimeters ----
+            # Reject segments where flange insertion creates crossing edges
+            is_valid_x, errors_x = validate_perimeter_ordering(new_tab_x)
+            if not is_valid_x:
+                continue
+            is_valid_z, errors_z = validate_perimeter_ordering(new_tab_z)
+            if not is_valid_z:
                 continue
 
             # ---- Update segment with modified tabs and intermediate tab ----

@@ -5,7 +5,7 @@ topologies:
   use_custom_sequences: false # Use custom sequences from user_input.py (e.g., shock_absorber_sequence)
 
 surface_separation:
-  auto_split: true           # Enable automatic surface splitting for multiple mounts
+  auto_split: false           # Enable automatic surface splitting for multiple mounts
   include_unseparated: true  # Also generate solutions without surface separation
   min_screws_for_split: 2    # Minimum number of mounts to trigger splitting
   screws_per_surface: 1      # Target number of mounts per surface after splitting

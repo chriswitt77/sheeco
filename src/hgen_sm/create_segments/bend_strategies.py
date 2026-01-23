@@ -57,6 +57,49 @@ def diagonals_cross_3d(p0, p3, p4, p7):
     return False
 
 
+def flange_extends_beyond_edge_range(CP_L, CP_R, FP_L, FP_R, tolerance_factor=1.05):
+    """
+    Check if flange points extend unreasonably far beyond the edge's span.
+
+    This catches cases where the flange is inserted at the wrong location,
+    causing flange points to project far outside the edge's natural range.
+    For example, if an edge spans y=[0,35] but flange points are at y=[0,40],
+    the flange extends 14% beyond the edge, indicating wrong insertion.
+
+    Args:
+        CP_L, CP_R: Corner points defining the edge
+        FP_L, FP_R: Flange points for this edge
+        tolerance_factor: How much extension is allowed (1.5 = 150% of edge length)
+
+    Returns:
+        True if flanges extend too far (should be filtered)
+    """
+    CP_L, CP_R = np.array(CP_L), np.array(CP_R)
+    FP_L, FP_R = np.array(FP_L), np.array(FP_R)
+
+    # Edge vector and length
+    edge_vec = CP_R - CP_L
+    edge_length = np.linalg.norm(edge_vec)
+
+    if edge_length < 1e-6:
+        return False  # Degenerate edge, can't check
+
+    edge_dir = edge_vec / edge_length
+
+    # Project FP points onto edge direction to see where they land relative to edge
+    for FP, CP_name in [(FP_L, 'L'), (FP_R, 'R')]:
+        vec_to_fp = FP - CP_L
+        projection = np.dot(vec_to_fp, edge_dir)
+
+        # Check if FP projects beyond edge endpoints by too much
+        if projection < -edge_length * 0.5:  # Too far before start
+            return True
+        if projection > edge_length * tolerance_factor:  # Too far past end
+            return True
+
+    return False
+
+
 def should_swap_z_side_ordering(FPyxL, FPyxR, FPyzR, FPyzL):
     """
     Determine if z-side L/R ordering should be swapped using hybrid approach.
@@ -592,6 +635,12 @@ def two_bends(segment, filter_cfg):
                 # Also swap corner correspondence for z-side
                 CPzL, CPzR = CPzR, CPzL
 
+            # ---- FILTER: Check if flanges extend too far beyond edge range ----
+            if flange_extends_beyond_edge_range(CPxL, CPxR, FPxyL, FPxyR):
+                continue
+            if flange_extends_beyond_edge_range(CPzL, CPzR, FPzyL, FPzyR):
+                continue
+
             # Create new segment
             new_segment = segment.copy()
             new_tab_x = new_segment.tabs['tab_x']
@@ -862,6 +911,12 @@ def two_bends(segment, filter_cfg):
             if angle_check_yz:
                 continue
 
+            # ---- FILTER: Check if flanges extend too far beyond edge range ----
+            if flange_extends_beyond_edge_range(CPxL, CPxR, FPxyL, FPxyR):
+                continue
+            if flange_extends_beyond_edge_range(CPzL, CPzR, FPzyL, FPzyR):
+                continue
+
             # Insert points in Tab x (with flange)
             # Use corner points for FP to ensure proper connection
             # CRITICAL: Insert after the corner that comes LATER in the perimeter order
@@ -1061,6 +1116,23 @@ def two_bends(segment, filter_cfg):
             CPzL = tab_z.points[CPzL_id]
             CPzR = tab_z.points[CPzR_id]
 
+            # Calculate edge_z properties
+            edge_z_vec = CPzR - CPzL
+            edge_z_mid = (CPzL + CPzR) / 2
+
+            # ---- FILTER: Check perpendicular distance between planes ----
+            # For parallel edges, if the two tabs' planes are too close together,
+            # the flanges extending outward will overlap
+            # Minimum safe distance is 2*min_flange_length (one flange length from each plane)
+
+            # Calculate perpendicular distance from plane_x to edge_z
+            # This is the distance along the normal direction from plane_x to any point on edge_z
+            vec_to_edge_z = edge_z_mid - plane_x.position
+            perp_distance = abs(np.dot(vec_to_edge_z, plane_x.orientation))
+
+            if perp_distance <= 2 * min_flange_length:
+                continue  # Planes too close, flanges would overlap
+
             # ---- FILTER: Is flange wide enough? ----
             if not min_flange_width_filter(BPL=BPxL, BPR=BPxR):
                 continue
@@ -1072,8 +1144,6 @@ def two_bends(segment, filter_cfg):
             bend_xy = Bend(position=BPxL, orientation=BPxR - BPxL, BPL=BPxL, BPR=BPxR)
 
             # Calculate outward direction for tab_z edge
-            edge_z_vec = CPzR - CPzL
-            edge_z_mid = (CPzL + CPzR) / 2
             out_dir_z = np.cross(edge_z_vec, plane_z.orientation)
             out_dir_z_norm = np.linalg.norm(out_dir_z)
             if out_dir_z_norm < 1e-9:
@@ -1128,6 +1198,12 @@ def two_bends(segment, filter_cfg):
                 BPzL, BPzR, plane_y, plane_z
             )
             if angle_check_yz:
+                continue
+
+            # ---- FILTER: Check if flanges extend too far beyond edge range ----
+            if flange_extends_beyond_edge_range(CPxL, CPxR, FPxyL, FPxyR):
+                continue
+            if flange_extends_beyond_edge_range(CPzL, CPzR, FPzyL, FPzyR):
                 continue
 
             # Insert points in Tab x - same logic as Approach 1

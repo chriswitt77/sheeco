@@ -28,7 +28,8 @@
       "Bash(ls:*)",
       "Bash(1)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(tee:*)"
     ]
   }
 }
