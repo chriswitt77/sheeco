@@ -5,11 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="zero_bend strategy fixed">
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies_zero_bend.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies_zero_bend.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/part_assembly/merge_helpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/__main__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/__main__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/data/rectangle.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/data/rectangle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/initialization.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/initialization.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

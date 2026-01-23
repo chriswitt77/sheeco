@@ -14,7 +14,7 @@ import copy
 import itertools
 
 from src.hgen_sm import Part
-from src.hgen_sm import initialize_objects, determine_sequences, create_segments, part_assembly, plot_solutions
+from src.hgen_sm import initialize_objects, determine_sequences, create_segments, part_assembly, plot_solutions, plot_input_rectangles
 
 # Try to import custom sequence if it exists
 import config.user_input as user_input_module
@@ -41,6 +41,10 @@ def main():
 
     # ---- Import user input ----
     part = initialize_objects(RECTANGLE_INPUTS)
+
+    # ---- Plot input rectangles (blocking - if enabled) ----
+    if plot_cfg.get('Show Input', True):
+        plot_input_rectangles(part, plot_cfg)
 
     # ---- Determine sensible Topologies ----
     # Returns list of (part_variant, sequences) tuples
@@ -90,7 +94,7 @@ def main():
     if len(solutions) == 0:
         return
 
-    #  ---- plot solutions ----
+    #  ---- Plot solutions ----
     plot_solutions(solutions, plot_cfg = plot_cfg)
 
 if __name__ == '__main__':

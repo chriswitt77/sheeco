@@ -91,19 +91,16 @@ def adjust_rectangle_for_mounts(A, B, C, mount_points, min_dist):
     Only edges that are too close to a mount are moved. The rectangle maintains
     its perpendicularity. Mounts stay at their absolute position.
 
-    The rectangle is defined by three points A, B, C where:
-    - A is a corner
-    - B is adjacent to A (edge AB)
-    - C is adjacent to B (edge BC)
-    - D is calculated as D = C - AB (adjacent to both C and A)
+    The three input points can be in any order. They will be automatically
+    reordered to form a proper rectangle.
 
     Args:
-        A, B, C: Three corner points defining the rectangle
+        A, B, C: Three corner points defining the rectangle (in any order)
         mount_points: List of 3D mount coordinates
         min_dist: Minimum required distance from mounts to edges
 
     Returns:
-        Tuple of adjusted (A, B, C) points
+        Tuple of adjusted (A, B, C) points properly ordered
     """
     if not mount_points:
         return A, B, C
@@ -113,10 +110,11 @@ def adjust_rectangle_for_mounts(A, B, C, mount_points, min_dist):
     B = np.array(B, dtype=np.float64)
     C = np.array(C, dtype=np.float64)
 
-    # Calculate fourth point D using the same formula as Rectangle class
-    # D = C - AB, so the rectangle is A -> B -> C -> D -> A
+    # Use the same logic as Rectangle.determine_fourth_point to properly
+    # order points and calculate D
+    A, B, C, D = Rectangle.determine_fourth_point(A, B, C)
+
     AB = B - A
-    D = C - AB
 
     # Convert mount points to numpy arrays
     mount_points_array = [np.array(m, dtype=np.float64) for m in mount_points]

@@ -24,6 +24,8 @@ filter:
   Too thin segments: False
 
 plot:
+  Show Input: True   # Show input rectangles before processing (blocking window)
+
   Rectangles: True
   Tab Points: False
   Tabs: True
@@ -31,12 +33,12 @@ plot:
   Triangulate Tabs: True
   Corner Points: False
   Mounts: True
-  
+
   Labels: False   # Turn off to increase plotting speed
 
   point_size: 30
   font_size: 30
-  
+
   BP1_color: "red"
   BP2_color: "blue"
   FPA1_color: "green"

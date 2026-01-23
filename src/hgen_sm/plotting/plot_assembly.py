@@ -228,10 +228,113 @@ def plot_part(part, plotter, plot_cfg, solution_idx, len_solutions):
     plotter.show_grid()
     plotter.render()
 
-def plot_solutions(solutions, plot_cfg, plotter=pv.Plotter()):
+def plot_input_rectangles(part, plot_cfg):
+    """
+    Plot only the input rectangles and mounts before processing.
+    Creates a blocking window - processing continues only after user closes it.
+    """
+    plotter = pv.Plotter()
+
+    standard_point_size = plot_cfg.get('point_size', 20)
+    standard_font_size = plot_cfg.get('font_size', 30)
+
+    color_rectangle = "#785ef0"
+    color_mount = "red"
+
+    # Add title
+    plotter.add_text("Input Rectangles - Close to continue", position="upper_left", font_size=25, color="black", shadow=True)
+
+    # Plot rectangles
+    for tab_id, tab_obj in part.tabs.items():
+        if getattr(tab_obj, 'rectangle', None):
+            corners = tab_obj.rectangle.points
+            pts = np.array([corners['A'], corners['B'], corners['C'], corners['D']])
+            faces = np.hstack([[4, 0, 1, 2, 3]])
+            rectangle_mesh = pv.PolyData(pts, faces)
+
+            plotter.add_mesh(
+                rectangle_mesh,
+                color=color_rectangle,
+                opacity=0.9,
+                show_edges=True,
+            )
+
+            # Add tab label at center
+            center_point = pts.mean(axis=0)
+            label = f"Tab_{tab_id}"
+            if plot_cfg.get('Labels', False):
+                plotter.add_point_labels(
+                    center_point,
+                    [label],
+                    font_size=standard_font_size,
+                    always_visible=True,
+                    show_points=False
+                )
+
+            # Add corner point labels
+            if plot_cfg.get('Corner Points', False):
+                for corner_name, corner_coord in corners.items():
+                    plotter.add_point_labels(
+                        corner_coord,
+                        [f"{corner_name}_{tab_id}"],
+                        font_size=standard_font_size - 5,
+                        point_size=standard_point_size,
+                        show_points=True,
+                        point_color="blue"
+                    )
+
+    # Plot mounts
+    if plot_cfg.get('Mounts', True):
+        for tab_id, tab_obj in part.tabs.items():
+            if hasattr(tab_obj, 'mounts') and tab_obj.mounts:
+                # Calculate plane normal from rectangle
+                if getattr(tab_obj, 'rectangle', None):
+                    corners = tab_obj.rectangle.points
+                    A = np.array(corners['A'])
+                    B = np.array(corners['B'])
+                    C = np.array(corners['C'])
+                    AB = B - A
+                    AC = C - A
+                    normal = np.cross(AB, AC)
+                    normal_len = np.linalg.norm(normal)
+                    if normal_len > 1e-9:
+                        normal = normal / normal_len
+                    else:
+                        normal = np.array([0, 0, 1])
+                else:
+                    normal = np.array([0, 0, 1])
+
+                for mount in tab_obj.mounts:
+                    if mount.global_coords is not None:
+                        center = mount.global_coords
+                        radius = mount.size
+                        disc = pv.Disc(center=center, inner=0, outer=radius, normal=normal, c_res=32)
+                        plotter.add_mesh(
+                            disc,
+                            color=color_mount,
+                            opacity=1.0,
+                        )
+                        if plot_cfg.get('Labels', False):
+                            plotter.add_point_labels(
+                                center,
+                                [f"M_{tab_id}"],
+                                font_size=standard_font_size,
+                                show_points=False
+                            )
+
+    plotter.show_grid()
+    plotter.enable_trackball_style()
+    plotter.show()  # Blocking - waits for user to close window
+
+
+def plot_solutions(solutions, plot_cfg, plotter=None):
     """
     Create interactive plotting window, which can be cycled through to explore all the solutions.
+    Creates a new plotter instance separate from the input visualization.
     """
+    if plotter is None:
+        plotter = pv.Plotter()
+
     solution_idx = [0]
     def show_solution(idx):
         plotter.clear()
@@ -250,7 +353,7 @@ def plot_solutions(solutions, plot_cfg, plotter=pv.Plotter()):
     plotter.add_key_event("Right", lambda: key_press_callback("Right"))
     plotter.add_key_event("Left", lambda: key_press_callback("Left"))
     show_solution(solution_idx[0])
-    plotter.enable_trackball_style()    
+    plotter.enable_trackball_style()
 
     plotter.show()
 
