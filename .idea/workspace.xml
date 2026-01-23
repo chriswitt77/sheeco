@@ -4,15 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="zero_bend strategy fixed">
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="Plotting of input added">
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/__main__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/__main__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/data/rectangle.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/data/rectangle.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/initialization.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/initialization.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/plotting/plot_assembly.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -206,7 +202,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769071714889</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Plotting of input added">
+      <option name="closed" value="true" />
+      <created>1769160657252</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1769160657252</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -223,6 +227,7 @@
     <MESSAGE value="updated merger for more than two tab merges with edge usage filter" />
     <MESSAGE value="zero_bend strategy added&#10;fixed sequence generation to eliminate same topologies from different sequences" />
     <MESSAGE value="zero_bend strategy fixed" />
-    <option name="LAST_COMMIT_MESSAGE" value="zero_bend strategy fixed" />
+    <MESSAGE value="Plotting of input added" />
+    <option name="LAST_COMMIT_MESSAGE" value="Plotting of input added" />
   </component>
 </project>

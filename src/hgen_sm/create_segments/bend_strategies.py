@@ -541,8 +541,22 @@ def two_bends(segment, filter_cfg):
 
             # Calculate normal for intermediate plane B (perpendicular to both A and C)
             normal_B = np.cross(plane_x.orientation, plane_z.orientation)
+
             if np.linalg.norm(normal_B) < 1e-6:
-                continue  # Planes are parallel, skip
+                # Planes are parallel - use edge direction to construct intermediate plane normal
+                # For parallel planes, intermediate plane must be perpendicular to both planes
+                # Cross product of plane normal with edge vector gives perpendicular direction
+                normal_B = np.cross(plane_x.orientation, edge_x_vec)
+
+                if np.linalg.norm(normal_B) < 1e-6:
+                    # Edge is parallel to plane normal (rare edge case)
+                    # Try using edge_z instead
+                    normal_B = np.cross(plane_z.orientation, edge_z_vec)
+
+                    if np.linalg.norm(normal_B) < 1e-6:
+                        # Both edges parallel to plane normal - skip this combination
+                        continue
+
             normal_B = normalize(normal_B)
 
             # Calculate outward directions for both edges
@@ -1130,7 +1144,7 @@ def two_bends(segment, filter_cfg):
             vec_to_edge_z = edge_z_mid - plane_x.position
             perp_distance = abs(np.dot(vec_to_edge_z, plane_x.orientation))
 
-            if perp_distance <= 2 * min_flange_length:
+            if perp_distance < 2 * min_flange_length:
                 continue  # Planes too close, flanges would overlap
 
             # ---- FILTER: Is flange wide enough? ----

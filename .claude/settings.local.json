@@ -29,7 +29,8 @@
       "Bash(1)",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(timeout 120 tail:*)"
     ]
   }
 }
