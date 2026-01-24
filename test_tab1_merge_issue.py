@@ -18,8 +18,19 @@ print()
 # Initialize
 part = initialize_objects(zylinderhalter)
 
-# Test sequence where tab 1 is connected to both tab 0 and tab 2
-sequence = [['0', '1'], ['1', '2']]
+# Test different sequences
+test_sequences = [
+    [['0', '1'], ['1', '2']],  # Tab 1 connects to 0 and 2
+    [['0', '1'], ['0', '2']],  # Tab 0 connects to 1 and 2 (tab 1 only connects to 0)
+]
+
+for seq_num, sequence in enumerate(test_sequences, 1):
+    print(f"\n{'=' * 80}")
+    print(f"TEST SEQUENCE {seq_num}: {sequence}")
+    print('=' * 80)
+    test_one_sequence(sequence)
+
+def test_one_sequence(sequence):
 
 print(f"Sequence: {sequence}")
 print(f"Tab 1 will have connections to tab 0 and tab 2")

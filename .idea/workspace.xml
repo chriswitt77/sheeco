@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="implemented 'both' option for surface splitting">
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/choose_strategy.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/choose_strategy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/determine_sequences/choose_pairs.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/determine_sequences/choose_pairs.py" afterDir="false" />
-    </list>
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="complete sequence generation strategy" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -230,7 +221,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769169754669</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="complete sequence generation strategy">
+      <option name="closed" value="true" />
+      <created>1769290912473</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1769290912473</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -250,6 +249,7 @@
     <MESSAGE value="Plotting of input added" />
     <MESSAGE value="Fixed two bend for parallel planes" />
     <MESSAGE value="implemented 'both' option for surface splitting" />
-    <option name="LAST_COMMIT_MESSAGE" value="implemented 'both' option for surface splitting" />
+    <MESSAGE value="complete sequence generation strategy" />
+    <option name="LAST_COMMIT_MESSAGE" value="complete sequence generation strategy" />
   </component>
 </project>
