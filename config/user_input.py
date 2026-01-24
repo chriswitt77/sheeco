@@ -94,7 +94,7 @@ same_plane = [
     }
 ]
 
-# Example with mounts - demonstrates surface splitting
+# Example with mounts
 with_mounts = [
     {
         'pointA': [50, 0, 0],
@@ -102,7 +102,7 @@ with_mounts = [
         'pointC': [100, 100, 0],
         'mounts': [
             [70, 25, 0],   # Mount near left side
-            [75, 80, 0]    # Mount near right side - will trigger split
+            [75, 80, 0]    # Mount near right side
         ]
     },
     {
@@ -110,7 +110,7 @@ with_mounts = [
         'pointB': [0, 40, 40],
         'pointC': [0, 40, 80],
         'mounts': [
-            [0, 50, 60]   # Single mount - no split needed
+            [0, 50, 60]   # Single mount
         ]
     }
 ]
@@ -220,7 +220,7 @@ campbell_vertical = [
 ]
 
 
-barda_example_one_sequence = [['0', '1'], ['0', '2'], ['0', '3'], ['3', '4'], ['3', '5'], ]
+barda_example_one_sequence = [['0', '1'], ['0', '2'], ['3', '0'], ['3', '4'], ['3', '5'], ]
 barda_example_one = [
     {
         'pointA': [0, 0, 55],
@@ -238,9 +238,9 @@ barda_example_one = [
         'pointC': [35, 80, 0]
     },
     {
-        'pointA': [58, 0, 55],
-        'pointB': [58, 50, 55],
-        'pointC': [95, 50, 55]
+        'pointA': [60, 0, 55],
+        'pointB': [60, 50, 55],
+        'pointC': [100, 50, 55]
     },
     {
         'pointA': [58, -25, 0],
@@ -305,6 +305,31 @@ zylinderhalter = [
             [10, 70, 30],
             [30, 70, 30]
         ]
+    }
+]
+
+transportschuh = [
+    {
+        'pointA': [0, 0, 0],
+        'pointB': [160, 0, 0],
+        'pointC': [0, 160, 0],
+        'mounts': [
+            [30, 15, 0],
+            [130, 15, 0]
+            #[30, 150, 0],
+            #[130, 150, 0]
+        ]
+    },
+    {
+        'pointA': [0, 180, 40],
+        'pointB': [160, 180, 40],
+        'pointC': [0, 180, 200],
+        # 'mounts': [
+        #     [30, 180, 110],
+        #     [130, 180, 110],
+        #     [30, 180, 185],
+        #     [130, 180, 185]
+        # ]
     }
 ]
 

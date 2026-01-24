@@ -3,17 +3,20 @@ topologies:
   tree_topology: true       # Spanning trees with different roots
   all_pairs: false           # All valid pairs (fully connected)
   use_custom_sequences: false # Use custom sequences from user_input.py (e.g., shock_absorber_sequence)
+  max_tree_topologies: null    # Maximum number of tree topologies to explore (null = all). Uses diversity selection to pick most different topologies.
 
 surface_separation:
-  auto_split: True           # Enable automatic surface splitting for multiple mounts
+  auto_split: false           # Enable automatic surface splitting for multiple mounts
   include_unseparated: true  # Also generate solutions without surface separation
   min_screws_for_split: 2    # Minimum number of mounts to trigger splitting
-  screws_per_surface: 2      # Target number of mounts per surface after splitting
+  screws_per_surface: 1      # Target number of mounts per surface after splitting
   split_along: both          # 'AB', 'AC', 'auto' (chooses longer edge), or 'both' (explores both AB and AC directions)
+  allow_sibling_connections: true  # Allow split surfaces to connect if they also have external connections
 
 design_exploration:
   single_bend: True
-  double_bend : True
+  double_bend: True
+  prioritize_perpendicular_bends: true  # If True, skip approach 2 (corner/edge connection) when approach 1 (90° perpendicular) generates solutions
 
 filter:
   Min Flange Width: True
@@ -24,7 +27,7 @@ filter:
   Too thin segments: False
 
 plot:
-  Show Input: False   # Show input rectangles before processing (blocking window)
+  Show Input: True   # Show input rectangles before processing (blocking window)
   Rectangles: True
   Tab Points: False
   Tabs: True

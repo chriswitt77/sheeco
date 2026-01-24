@@ -486,7 +486,7 @@ def one_bend(segment, filter_cfg):
     return segment_library
 
 
-def two_bends(segment, filter_cfg):
+def two_bends(segment, segment_cfg, filter_cfg):
     """
     Generate double-bend connections between two tabs (A ↔ C) via intermediate plane B.
 
@@ -496,6 +496,7 @@ def two_bends(segment, filter_cfg):
        - Produces cleaner, more manufacturable bends
     2. APPROACH 2 (fallback): Corner point connection
        - Uses existing corner-based logic when 90° approach isn't possible
+       - Skipped if prioritize_perpendicular_bends=True and approach 1 succeeded
 
     Both tabs get flange areas so bending lines lie outside initial tab geometries.
     """
@@ -517,6 +518,9 @@ def two_bends(segment, filter_cfg):
                     ('B', 'A'), ('C', 'B'), ('D', 'C'), ('A', 'D')]
 
     segment_library = []
+
+    # Track which edge pairs succeeded in approach 1 (for prioritization)
+    successful_edge_pairs = set()  # Set of (pair_x, pair_z) tuples
 
     # Calculate centroids for direction checks
     rect_x_corners = [tab_x.points[k] for k in ['A', 'B', 'C', 'D']]
@@ -811,6 +815,11 @@ def two_bends(segment, filter_cfg):
                 continue
 
             segment_library.append(new_segment)
+            # Track this edge pair as successful for approach 1
+            successful_edge_pairs.add((pair_x, pair_z))
+
+    # Determine if we should skip approach 2 for edge pairs that succeeded in approach 1
+    prioritize_perpendicular = segment_cfg.get('prioritize_perpendicular_bends', True)
 
     # ========== APPROACH 2A: CORNER CONNECTION (NON-PARALLEL, WITH CORNER REMOVAL) ==========
     for pair_x in rect_x_edges:
@@ -1126,6 +1135,10 @@ def two_bends(segment, filter_cfg):
 
         # Iterate over edges for parallel connection
         for pair_z in rect_z_edges:
+            # Skip this edge pair if approach 1 already succeeded for it
+            if prioritize_perpendicular and (pair_x, pair_z) in successful_edge_pairs:
+                continue
+
             CPzL_id, CPzR_id = pair_z
             CPzL = tab_z.points[CPzL_id]
             CPzR = tab_z.points[CPzR_id]
