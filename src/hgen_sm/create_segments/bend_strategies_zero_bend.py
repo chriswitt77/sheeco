@@ -415,6 +415,20 @@ def zero_bends(segment, filter_cfg):
                     f"FP{tab_x_id}_{tab_y_id}L": FPxL
                 }
 
+            # CRITICAL FIX: Remove FP points that duplicate existing corners (zero_bend - tab_x)
+            corners_coords_x_zb = {k: v for k, v in new_tab_x.points.items() if k in ['A', 'B', 'C', 'D']}
+            fp_points_to_remove_x_zb = []
+
+            for fp_name, fp_coord in list(bend_points_x.items()):
+                if 'FP' in fp_name:
+                    for corner_name, corner_coord in corners_coords_x_zb.items():
+                        if np.allclose(fp_coord, corner_coord, atol=1e-6):
+                            fp_points_to_remove_x_zb.append(fp_name)
+                            break
+
+            for fp_name in fp_points_to_remove_x_zb:
+                del bend_points_x[fp_name]
+
             new_tab_x.insert_points(L={insert_after_x_id: insert_after_x_val}, add_points=bend_points_x)
 
             # ---- Insert Points in Tab Z ----
@@ -461,6 +475,20 @@ def zero_bends(segment, filter_cfg):
                     f"BP{tab_z_id}_{tab_y_id}L": BPzL,
                     f"FP{tab_z_id}_{tab_y_id}L": FPzL
                 }
+
+            # CRITICAL FIX: Remove FP points that duplicate existing corners (zero_bend - tab_z)
+            corners_coords_z_zb = {k: v for k, v in new_tab_z.points.items() if k in ['A', 'B', 'C', 'D']}
+            fp_points_to_remove_z_zb = []
+
+            for fp_name, fp_coord in list(bend_points_z.items()):
+                if 'FP' in fp_name:
+                    for corner_name, corner_coord in corners_coords_z_zb.items():
+                        if np.allclose(fp_coord, corner_coord, atol=1e-6):
+                            fp_points_to_remove_z_zb.append(fp_name)
+                            break
+
+            for fp_name in fp_points_to_remove_z_zb:
+                del bend_points_z[fp_name]
 
             new_tab_z.insert_points(L={insert_after_z_id: insert_after_z_val}, add_points=bend_points_z)
 

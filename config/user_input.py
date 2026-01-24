@@ -333,5 +333,5 @@ transportschuh = [
     }
 ]
 
-# ver_example_one, ver_example_two, shock_absorber, shock_absorber_double_tab, ver_acrylic_model, campbell_vertical, barda_example_one, barda_example_two, zylinderhalter
+# ver_example_one, ver_example_two, shock_absorber, shock_absorber_double_tab, ver_acrylic_model, campbell_vertical, barda_example_one, barda_example_two, zylinderhalter, transportschuh
 RECTANGLE_INPUTS = zylinderhalter

@@ -27,7 +27,7 @@ filter:
   Too thin segments: False
 
 plot:
-  Show Input: True   # Show input rectangles before processing (blocking window)
+  Show Input: False   # Show input rectangles before processing (blocking window)
   Rectangles: True
   Tab Points: False
   Tabs: True
