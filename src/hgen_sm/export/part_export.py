@@ -68,6 +68,105 @@ def export_to_json(part, output_dir="exports"):
     return filepath
 
 # WARNING: THIS SECTION IS STILL EXPERIMENTAL
+
+def parse_connecting_tab_id(tab_id):
+    """
+    Identify if a tab ID represents a connecting tab and extract source/target tab IDs.
+
+    Connecting tabs have IDs like "01", "12", "02" (concatenation of source and target).
+
+    Args:
+        tab_id: String tab ID to parse
+
+    Returns:
+        (source_tab_id, target_tab_id) tuple or None if not a connecting tab
+    """
+    # Connecting tabs are typically 2 characters (single digit IDs concatenated)
+    # Examples: "01", "12", "02"
+    if not isinstance(tab_id, str) or len(tab_id) < 2:
+        return None
+
+    # Check if it's all digits
+    if not tab_id.isdigit():
+        return None
+
+    # For 2-digit IDs, split into individual digits
+    if len(tab_id) == 2:
+        return (tab_id[0], tab_id[1])
+
+    # For longer IDs, try common patterns
+    # Could be "012" (tab 0 to tab 12) or "012" (tab 01 to tab 2)
+    # Default to half-split for simplicity
+    mid = len(tab_id) // 2
+    return (tab_id[:mid], tab_id[mid:])
+
+def calculate_tab_normal(tab_points):
+    """
+    Calculate plane normal for a tab given its points.
+
+    Args:
+        tab_points: Dictionary of point labels to coordinates
+
+    Returns:
+        Normal vector as list [x, y, z] or None if calculation fails
+    """
+    sub = lambda a, b: [a[i] - b[i] for i in range(3)]
+    cross = lambda a, b: [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]
+    mag_sq = lambda v: sum(x*x for x in v)
+    norm = lambda v: [x / m for x in v] if (m := math.sqrt(sum(x*x for x in v))) else v
+
+    pts = list(tab_points.values())
+    if len(pts) < 3:
+        return None
+
+    # Try to use A, B, C if available (original rectangles)
+    if 'A' in tab_points and 'B' in tab_points and 'C' in tab_points:
+        A = tab_points['A']
+        B = tab_points['B']
+        C = tab_points['C']
+        v1 = sub(B, A)
+        v2 = sub(C, A)
+    else:
+        # Use first three non-collinear points
+        v1 = sub(pts[1], pts[0])
+        v2 = None
+        for i in range(2, len(pts)):
+            v_temp = sub(pts[i], pts[0])
+            cp = cross(v1, v_temp)
+            if mag_sq(cp) > 1e-8:
+                v2 = v_temp
+                break
+
+        if v2 is None:
+            return None
+
+    # Calculate and normalize normal
+    z_axis = cross(v1, v2)
+    if mag_sq(z_axis) < 1e-8:
+        return None
+
+    return norm(z_axis)
+
+def are_normals_coplanar(normal1, normal2, tolerance=0.01):
+    """
+    Check if two normals indicate coplanar surfaces.
+
+    Normals are coplanar if they're nearly parallel or anti-parallel.
+
+    Args:
+        normal1, normal2: Normal vectors as lists [x, y, z]
+        tolerance: Tolerance for coplanarity check (default 0.01)
+
+    Returns:
+        Boolean indicating if normals are coplanar
+    """
+    dot = lambda a, b: sum(x*y for x, y in zip(a, b))
+
+    # Dot product of unit normals gives cosine of angle between them
+    # |dot| ≈ 1 means parallel or anti-parallel (coplanar)
+    dot_product = abs(dot(normal1, normal2))
+    return dot_product > (1.0 - tolerance)
+
 def export_to_onshape(part, output_dir="exports"):
     part_json = create_part_json(part)
     # Vector helpers
@@ -131,6 +230,31 @@ def export_to_onshape(part, output_dir="exports"):
         z_axis = norm(z_axis)
         x_axis = norm(v1)  # x-axis along first edge direction
         y_axis = cross(z_axis, x_axis)  # y-axis perpendicular in plane
+
+        # Check if this is a connecting tab between coplanar tabs
+        # If so, ensure it has the same normal direction as the tabs it connects
+        parsed_ids = parse_connecting_tab_id(tab_id)
+        if parsed_ids is not None:
+            source_id, target_id = parsed_ids
+
+            # Get the tabs it connects
+            if source_id in part_json.get("tabs", {}) and target_id in part_json.get("tabs", {}):
+                source_tab_data = part_json["tabs"][source_id]
+                target_tab_data = part_json["tabs"][target_id]
+
+                # Calculate their normals
+                source_normal = calculate_tab_normal(source_tab_data["points"])
+                target_normal = calculate_tab_normal(target_tab_data["points"])
+
+                if source_normal and target_normal:
+                    # Check if they're coplanar
+                    if are_normals_coplanar(source_normal, target_normal):
+                        # Ensure connecting tab has same normal direction as source tab
+                        if dot(z_axis, source_normal) < 0:
+                            # Normal points opposite direction, flip it
+                            z_axis = [-z_axis[0], -z_axis[1], -z_axis[2]]
+                            # Recalculate y_axis since z_axis changed
+                            y_axis = cross(z_axis, x_axis)
 
         # Filter points for export:
         # 1. Skip FP points ONLY if they're duplicates (at corner coordinates)
@@ -255,3 +379,4 @@ def export_to_onshape(part, output_dir="exports"):
     with open(filepath, 'w') as f:
         f.write("\n".join(fs))
     print(f"Done. Copy {filepath} to Onshape.")
+    return filepath

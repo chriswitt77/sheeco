@@ -222,6 +222,42 @@ def calculate_flange_points_with_angle_check(BP1, BP2, planeA, planeB, flange_le
     return FPAL, FPAR, FPBL, FPBR, False
 
 
+def project_onto_bend_line(point, bend):
+    """
+    Project a point onto the bend line and return parameter t.
+
+    The bend line is parameterized as: L(t) = bend.position + t * bend.orientation
+    For a point P, its projection is at parameter:
+        t = dot(P - bend.position, bend.orientation)
+
+    Args:
+        point: 3D point to project
+        bend: Bend object with position and orientation
+
+    Returns:
+        t: scalar parameter representing position along the bend line
+    """
+    vec_to_point = point - bend.position
+    t = np.dot(vec_to_point, bend.orientation)
+    return t
+
+
+def get_tab_projection_range(tab, bend):
+    """
+    Project all corners of a tab onto the bend line and return the range [t_min, t_max].
+
+    Args:
+        tab: Tab object with corner points
+        bend: Bend object with position and orientation
+
+    Returns:
+        (t_min, t_max): Range of projection parameters for the tab's corners
+    """
+    corners = [tab.points[k] for k in ['A', 'B', 'C', 'D']]
+    t_values = [project_onto_bend_line(corner, bend) for corner in corners]
+    return min(t_values), max(t_values)
+
+
 def one_bend(segment, filter_cfg):
     """
     Generate single-bend connections between two tabs.
@@ -281,6 +317,52 @@ def one_bend(segment, filter_cfg):
             # ---- FILTER: Is flange wide enough? ----
             if not min_flange_width_filter(BPL=BPL, BPR=BPR):
                 continue
+
+            # ---- FILTER: Perpendicular edges with projection-based bounds check ----
+            # Filter edges that are perpendicular to the bend line AND have bend points
+            # within the tab's projected range (indicating a "local" infeasible connection)
+            max_edge_to_bend_angle = filter_cfg.get('max_edge_to_bend_angle', 75)
+            projection_tolerance = 1e-3
+
+            # Check tab_x edge angle to bend line
+            edge_x_vec = CP_xR - CP_xL
+            edge_x_len = np.linalg.norm(edge_x_vec)
+            if edge_x_len > 1e-9:
+                edge_x_dir = edge_x_vec / edge_x_len
+                dot_x = abs(np.dot(edge_x_dir, bend.orientation))
+                angle_x_deg = np.degrees(np.arccos(np.clip(dot_x, 0, 1)))
+
+                if angle_x_deg > max_edge_to_bend_angle:
+                    # Edge is perpendicular - check if bend points are within tab's projection range
+                    t_min_x, t_max_x = get_tab_projection_range(tab_x, bend)
+                    t_bpl = project_onto_bend_line(BPL, bend)
+                    t_bpr = project_onto_bend_line(BPR, bend)
+
+                    bpl_in_range = (t_min_x - projection_tolerance) <= t_bpl <= (t_max_x + projection_tolerance)
+                    bpr_in_range = (t_min_x - projection_tolerance) <= t_bpr <= (t_max_x + projection_tolerance)
+
+                    if bpl_in_range and bpr_in_range:
+                        continue  # Filter: perpendicular edge with local connection
+
+            # Check tab_z edge angle to bend line
+            edge_z_vec = CP_zR - CP_zL
+            edge_z_len = np.linalg.norm(edge_z_vec)
+            if edge_z_len > 1e-9:
+                edge_z_dir = edge_z_vec / edge_z_len
+                dot_z = abs(np.dot(edge_z_dir, bend.orientation))
+                angle_z_deg = np.degrees(np.arccos(np.clip(dot_z, 0, 1)))
+
+                if angle_z_deg > max_edge_to_bend_angle:
+                    # Edge is perpendicular - check if bend points are within tab's projection range
+                    t_min_z, t_max_z = get_tab_projection_range(tab_z, bend)
+                    t_bpl = project_onto_bend_line(BPL, bend)
+                    t_bpr = project_onto_bend_line(BPR, bend)
+
+                    bpl_in_range = (t_min_z - projection_tolerance) <= t_bpl <= (t_max_z + projection_tolerance)
+                    bpr_in_range = (t_min_z - projection_tolerance) <= t_bpr <= (t_max_z + projection_tolerance)
+
+                    if bpl_in_range and bpr_in_range:
+                        continue  # Filter: perpendicular edge with local connection
 
             # ---- Step 2: Calculate Flange Points perpendicular to bend line ----
             # FP extends from BP perpendicular to the bend line, toward each plane

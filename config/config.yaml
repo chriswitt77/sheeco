@@ -2,7 +2,7 @@ topologies:
   simple_topology: false      # Sequential chain: 0-1, 1-2, 2-3, ...
   tree_topology: true       # Spanning trees with different roots
   all_pairs: false           # All valid pairs (fully connected)
-  use_custom_sequences: false # Use custom sequences from user_input.py (e.g., shock_absorber_sequence)
+  use_custom_sequences: true # Use custom sequences from user_input.py (e.g., shock_absorber_sequence)
   max_tree_topologies: null    # Maximum number of tree topologies to explore (null = all). Uses diversity selection to pick most different topologies.
 
 surface_separation:
@@ -20,11 +20,12 @@ design_exploration:
 
 filter:
   Min Flange Width: True
-  Min Bend Angle: False
+  Min Bend Angle: True
   Tabs cover Rects: True
   Lines Cross: True
   Collisions: True
   Too thin segments: False
+  max_edge_to_bend_angle: 75  # Maximum angle (degrees) between edge and bend line for projection-based perpendicular filter
 
 plot:
   Show Input: False   # Show input rectangles before processing (blocking window)

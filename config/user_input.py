@@ -220,7 +220,7 @@ campbell_vertical = [
 ]
 
 
-barda_example_one_sequence = [['0', '1'], ['0', '2'], ['3', '0'], ['3', '4'], ['3', '5'], ]
+barda_example_one_sequence = [['3', '0'], ['0', '1'], ['0', '2'], ['3', '4'], ['3', '5'], ]
 barda_example_one = [
     {
         'pointA': [0, 0, 55],
@@ -334,4 +334,4 @@ transportschuh = [
 ]
 
 # ver_example_one, ver_example_two, shock_absorber, shock_absorber_double_tab, ver_acrylic_model, campbell_vertical, barda_example_one, barda_example_two, zylinderhalter, transportschuh
-RECTANGLE_INPUTS = zylinderhalter
+RECTANGLE_INPUTS = transportschuh
