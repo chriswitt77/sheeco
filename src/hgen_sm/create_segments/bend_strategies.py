@@ -258,6 +258,148 @@ def get_tab_projection_range(tab, bend):
     return min(t_values), max(t_values)
 
 
+def validate_edge_coplanarity(CPxL, CPxR, CPzL, CPzR, plane_x, plane_z,
+                              base_tolerance=5.0, relative_tolerance=0.1):
+    """
+    Adaptive edge coplanarity check that scales with geometry size.
+
+    Uses connection-distance-relative tolerance for small geometries,
+    and fixed base tolerance for large geometries.
+
+    Args:
+        CPxL, CPxR, CPzL, CPzR: Edge corner points
+        plane_x, plane_z: Tab planes
+        base_tolerance: Base tolerance for large geometries (mm)
+        relative_tolerance: Tolerance as fraction of connection distance (e.g., 0.1 = 10%)
+
+    Returns:
+        bool: True if valid, False if should be filtered
+    """
+    # Calculate connection distance (distance between edge midpoints)
+    edge_x_mid = (CPxL + CPxR) / 2
+    edge_z_mid = (CPzL + CPzR) / 2
+    connection_dist = np.linalg.norm(edge_z_mid - edge_x_mid)
+
+    # Adaptive tolerance: use the maximum of base tolerance and relative tolerance
+    # This ensures small geometries get at least base_tolerance,
+    # while larger geometries get proportionally more tolerance
+    tolerance = max(base_tolerance, relative_tolerance * connection_dist)
+
+    # Fit plane through four points using centroid and SVD
+    points = np.array([CPxL, CPxR, CPzL, CPzR])
+    centroid = np.mean(points, axis=0)
+    centered = points - centroid
+
+    # SVD to find best-fit plane normal (smallest singular value direction)
+    _, _, vh = np.linalg.svd(centered)
+    fitted_normal = vh[-1]  # Last row = direction of smallest variance
+    fitted_normal = normalize(fitted_normal)
+
+    # Check coplanarity: max distance from fitted plane
+    distances = [abs(np.dot(p - centroid, fitted_normal)) for p in points]
+    max_dist = max(distances)
+
+    if max_dist > tolerance:
+        return False  # Points not coplanar enough
+
+    # Check if fitted plane is perpendicular to both tab planes
+    # Relaxed tolerance (20°) to allow slightly non-coplanar edges in small geometries
+    angle_tol = np.radians(20)  # Allow 20 degrees tolerance
+    dot_x = abs(np.dot(fitted_normal, plane_x.orientation))
+    dot_z = abs(np.dot(fitted_normal, plane_z.orientation))
+    angle_x = np.arccos(np.clip(dot_x, 0, 1))
+    angle_z = np.arccos(np.clip(dot_z, 0, 1))
+
+    is_perp_x = abs(angle_x - np.pi/2) < angle_tol
+    is_perp_z = abs(angle_z - np.pi/2) < angle_tol
+
+    return is_perp_x and is_perp_z
+
+
+def validate_bend_point_ranges(BPxL, BPxR, tab_x, BPzL, BPzR, tab_z,
+                                base_margin=0.3, max_absolute_overshoot=50.0):
+    """
+    Adaptive bend point range check with absolute overshoot limit.
+
+    Uses relative margin for normal cases, but filters out cases with
+    excessive absolute overshoot (e.g., 90mm) that create unrealistic geometry.
+
+    Args:
+        BPxL, BPxR: Bend points for tab_x edge
+        tab_x: Source tab
+        BPzL, BPzR: Bend points for tab_z edge
+        tab_z: Target tab
+        base_margin: Relative margin (0.3 = 30%)
+        max_absolute_overshoot: Maximum absolute overshoot distance (mm)
+
+    Returns:
+        bool: True if valid, False if should be filtered
+    """
+    # Get tab bounding boxes
+    corners_x = np.array([tab_x.points[k] for k in ['A', 'B', 'C', 'D']])
+    corners_z = np.array([tab_z.points[k] for k in ['A', 'B', 'C', 'D']])
+
+    min_x = np.min(corners_x, axis=0)
+    max_x = np.max(corners_x, axis=0)
+    range_x = max_x - min_x
+
+    min_z = np.min(corners_z, axis=0)
+    max_z = np.max(corners_z, axis=0)
+    range_z = max_z - min_z
+
+    # Check bend points: only filter if absolute overshoot exceeds limit
+    # The max_absolute_overshoot is the key filter for degenerate geometry
+    for BP in [BPxL, BPxR]:
+        # Calculate actual overshoot distance beyond tab bounds
+        overshoot = np.maximum(min_x - BP, BP - max_x)
+        overshoot = np.maximum(overshoot, 0)  # Only positive overshoots
+
+        # Filter if exceeds absolute overshoot limit
+        if np.max(overshoot) > max_absolute_overshoot:
+            return False
+
+    for BP in [BPzL, BPzR]:
+        # Calculate actual overshoot distance beyond tab bounds
+        overshoot = np.maximum(min_z - BP, BP - max_z)
+        overshoot = np.maximum(overshoot, 0)  # Only positive overshoots
+
+        # Filter if exceeds absolute overshoot limit
+        if np.max(overshoot) > max_absolute_overshoot:
+            return False
+
+    return True
+
+
+def validate_intermediate_tab_aspect_ratio(BPxL, BPxR, BPzL, BPzR, max_ratio=10.0):
+    """
+    Check if intermediate tab has reasonable aspect ratio (not too elongated).
+
+    Args:
+        BPxL, BPxR, BPzL, BPzR: Bend points defining intermediate tab
+        max_ratio: Maximum allowed aspect ratio
+
+    Returns:
+        bool: True if valid, False if should be filtered
+    """
+    # Calculate dimensions
+    width_L = np.linalg.norm(BPzL - BPxL)
+    width_R = np.linalg.norm(BPzR - BPxR)
+    length_x = np.linalg.norm(BPxR - BPxL)
+    length_z = np.linalg.norm(BPzR - BPzL)
+
+    # Get min and max dimensions
+    dimensions = [width_L, width_R, length_x, length_z]
+    min_dim = min(dimensions)
+    max_dim = max(dimensions)
+
+    if min_dim < 1e-6:  # Avoid division by zero
+        return False
+
+    aspect_ratio = max_dim / min_dim
+
+    return aspect_ratio <= max_ratio
+
+
 def one_bend(segment, filter_cfg):
     """
     Generate single-bend connections between two tabs.
@@ -660,14 +802,21 @@ def two_bends(segment, segment_cfg, filter_cfg):
             connection_vec = edge_z_mid - edge_x_mid
             dist_along_normal_B = np.dot(connection_vec, normal_B)
 
-            # Check if edges are growing outward (toward each other)
+            # ---- FILTER: Check if outward directions are compatible ----
+            # Filter only if outward directions are antiparallel (pointing away from each other)
+            # For perpendicular tabs, allow various direction configurations
+            antiparallel_threshold = segment_cfg.get('two_bend_antiparallel_threshold', -0.8)
+            out_dirs_dot = np.dot(out_dir_x, out_dir_z)
+
+            if out_dirs_dot < antiparallel_threshold:
+                continue  # Outward directions are antiparallel - tabs facing away
+
+            # Determine shift distances based on connection geometry
+            # Check if edges are growing toward each other or need adjustment
             is_x_growing = np.dot(out_dir_x, connection_vec) > 0
             is_z_growing = np.dot(out_dir_z, -connection_vec) > 0
 
-            if not is_x_growing and not is_z_growing:
-                continue  # Both would shrink, skip
-
-            # Shift distances
+            # Shift distances: adjust based on which direction needs more reach
             if is_x_growing:
                 shift_dist_x = abs(dist_along_normal_B) + min_flange_length
                 shift_dist_z = min_flange_length
@@ -697,6 +846,33 @@ def two_bends(segment, segment_cfg, filter_cfg):
 
             if not (is_perp_to_x and is_perp_to_z):
                 continue  # Not perpendicular, will try in fallback approach
+
+            # ---- ADDITIONAL VALIDATION: Edge coplanarity ----
+            # Check if the four edge corner points form a plane perpendicular to both tabs
+            # Uses adaptive tolerance: relative for small geometries, absolute for large
+            coplanarity_base = filter_cfg.get('edge_coplanarity_tolerance', 5.0)
+            coplanarity_relative = filter_cfg.get('edge_coplanarity_relative_tolerance', 0.1)
+            if not validate_edge_coplanarity(CPxL, CPxR, CPzL, CPzR, plane_x, plane_z,
+                                             base_tolerance=coplanarity_base,
+                                             relative_tolerance=coplanarity_relative):
+                continue  # Edges don't form valid perpendicular plane
+
+            # ---- ADDITIONAL VALIDATION: Bend point ranges ----
+            # Check if bend points are within reasonable proximity to tabs
+            # Uses relative margin but filters excessive absolute overshoot
+            bp_range_margin = segment_cfg.get('bend_point_range_margin', 0.3)
+            bp_max_overshoot = segment_cfg.get('bend_point_max_absolute_overshoot', 50.0)
+            if not validate_bend_point_ranges(BPxL, BPxR, tab_x, BPzL, BPzR, tab_z,
+                                               base_margin=bp_range_margin,
+                                               max_absolute_overshoot=bp_max_overshoot):
+                continue  # Bend points too far from tab regions (degenerate geometry)
+
+            # ---- ADDITIONAL VALIDATION: Intermediate tab aspect ratio ----
+            # Check if intermediate tab has reasonable proportions
+            max_aspect_ratio = segment_cfg.get('max_intermediate_aspect_ratio', 10.0)
+            if not validate_intermediate_tab_aspect_ratio(BPxL, BPxR, BPzL, BPzR,
+                                                           max_ratio=max_aspect_ratio):
+                continue  # Intermediate tab too elongated (degenerate geometry)
 
             # ---- FILTER: Minimum flange width ----
             if not min_flange_width_filter(BPL=BPxL, BPR=BPxR):

@@ -17,6 +17,10 @@ design_exploration:
   single_bend: True
   double_bend: True
   prioritize_perpendicular_bends: true  # If True, skip approach 2 (corner/edge connection) when approach 1 (90° perpendicular) generates solutions
+  two_bend_antiparallel_threshold: -0.8  # Filter two-bend Approach 1 if outward direction dot product < this value
+  bend_point_range_margin: 0.3  # Allow bend points 30% beyond tab bounding box
+  bend_point_max_absolute_overshoot: 50.0  # Maximum absolute overshoot distance (mm) - catches extreme degenerate cases
+  max_intermediate_aspect_ratio: 10.0  # Maximum aspect ratio for intermediate tabs
 
 filter:
   Min Flange Width: True
@@ -26,6 +30,8 @@ filter:
   Collisions: True
   Too thin segments: False
   max_edge_to_bend_angle: 75  # Maximum angle (degrees) between edge and bend line for projection-based perpendicular filter
+  edge_coplanarity_tolerance: 5.0  # Base tolerance for large geometries (mm)
+  edge_coplanarity_relative_tolerance: 0.1  # Relative tolerance for small geometries (10% of connection distance)
 
 plot:
   Show Input: False   # Show input rectangles before processing (blocking window)

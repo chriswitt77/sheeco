@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="fixed two_bend ordering">
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="fixed one bend bugged generation">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IMPLEMENTATION_SUMMARY.md" beforeDir="false" afterPath="$PROJECT_DIR$/IMPLEMENTATION_SUMMARY.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/export/part_export.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/export/part_export.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -252,7 +250,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769294916065</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="fixed one bend bugged generation">
+      <option name="closed" value="true" />
+      <created>1769492588111</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1769492588111</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -274,6 +280,7 @@
     <MESSAGE value="implemented 'both' option for surface splitting" />
     <MESSAGE value="complete sequence generation strategy" />
     <MESSAGE value="fixed two_bend ordering" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed two_bend ordering" />
+    <MESSAGE value="fixed one bend bugged generation" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed one bend bugged generation" />
   </component>
 </project>
