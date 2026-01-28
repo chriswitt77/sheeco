@@ -31,7 +31,8 @@
       "Bash(find:*)",
       "Bash(tee:*)",
       "Bash(timeout 120 tail:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(timeout 5 tail:*)"
     ]
   }
 }

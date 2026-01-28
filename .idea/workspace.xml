@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="fixed one bend bugged generation">
+    <list default="true" id="3ed5e560-133b-4045-927d-65f5c4b33eff" name="Changes" comment="fixed two bend bugged generation">
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/config.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/user_input.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/user_input.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/create_segments/bend_strategies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hgen_sm/plotting/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hgen_sm/plotting/__init__.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,6 +58,8 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.__main__.executor": "Run",
     "Python.bend_strategies.executor": "Run",
+    "Python.plot_segments.executor": "Run",
+    "Python.test_plot_segments.executor": "Run",
     "Python.user_input.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -258,7 +260,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769492588111</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="fixed two bend bugged generation">
+      <option name="closed" value="true" />
+      <created>1769510705679</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1769510705679</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -281,6 +291,7 @@
     <MESSAGE value="complete sequence generation strategy" />
     <MESSAGE value="fixed two_bend ordering" />
     <MESSAGE value="fixed one bend bugged generation" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed one bend bugged generation" />
+    <MESSAGE value="fixed two bend bugged generation" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed two bend bugged generation" />
   </component>
 </project>

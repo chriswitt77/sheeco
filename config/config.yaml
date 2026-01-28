@@ -20,7 +20,7 @@ design_exploration:
   two_bend_antiparallel_threshold: -0.8  # Filter two-bend Approach 1 if outward direction dot product < this value
   bend_point_range_margin: 0.3  # Allow bend points 30% beyond tab bounding box
   bend_point_max_absolute_overshoot: 50.0  # Maximum absolute overshoot distance (mm) - catches extreme degenerate cases
-  max_intermediate_aspect_ratio: 10.0  # Maximum aspect ratio for intermediate tabs
+  max_intermediate_aspect_ratio: 25.0  # Maximum aspect ratio for intermediate tabs
 
 filter:
   Min Flange Width: True
